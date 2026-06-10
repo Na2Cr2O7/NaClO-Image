@@ -545,7 +545,7 @@ int main() {
   {
     printf("Luminance\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
-    printf("%f", NaClO_Luminance2(NaClO_Pixel(&src.result, 20, 20)->RGB));
+    printf("%f\n", NaClO_Luminance2(NaClO_Pixel(&src.result, 20, 20)->RGB));
     NaClO_FreeImage(&src.result);
   }
   {
