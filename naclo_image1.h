@@ -1005,6 +1005,7 @@ NaClO_ImageResult NaClO_Convert(NaClO_Image *data, const char *mode_str) {
 
   return NaClO_ConvertE(data, mode);
 }
+
 NaClO_ErrorType NaClO_Converted(NaClO_Image *data, const char *mode_str) {
   NaClO_ImageResult r = NaClO_Convert(data, mode_str);
   if (r.Error != NACLO_OK) {
@@ -4957,15 +4958,19 @@ NaClO_ErrorType NaClO_Divided(NaClO_Image *I1, NaClO_Image *I2) {
 
       switch (I1->mode) {
       case NaClO_RGB:
-        p1.RGB.r = (uint8_t)(floorf((NaClO_float)p1.RGB.r / p2.RGB.r) * 255);
-        p1.RGB.g = (uint8_t)(floorf((NaClO_float)p1.RGB.g / p2.RGB.g) * 255);
-        p1.RGB.b = (uint8_t)(floorf((NaClO_float)p1.RGB.b / p2.RGB.b) * 255);
+        p1.RGB.r = (uint8_t)(floorf(((NaClO_float)p1.RGB.r / p2.RGB.r) * 255));
+        p1.RGB.g = (uint8_t)(floorf(((NaClO_float)p1.RGB.g / p2.RGB.g) * 255));
+        p1.RGB.b = (uint8_t)(floorf(((NaClO_float)p1.RGB.b / p2.RGB.b) * 255));
         break;
       case NaClO_RGBA:
-        p1.RGBA.r = (uint8_t)(floorf((NaClO_float)p1.RGBA.r / p2.RGBA.r) * 255);
-        p1.RGBA.g = (uint8_t)(floorf((NaClO_float)p1.RGBA.g / p2.RGBA.g) * 255);
-        p1.RGBA.b = (uint8_t)(floorf((NaClO_float)p1.RGBA.b / p2.RGBA.b) * 255);
-        p1.RGBA.a = (uint8_t)(floorf((NaClO_float)p1.RGBA.a / p2.RGBA.a) * 255);
+        p1.RGBA.r =
+            (uint8_t)(floorf(((NaClO_float)p1.RGBA.r / p2.RGBA.r) * 255));
+        p1.RGBA.g =
+            (uint8_t)(floorf(((NaClO_float)p1.RGBA.g / p2.RGBA.g) * 255));
+        p1.RGBA.b =
+            (uint8_t)(floorf(((NaClO_float)p1.RGBA.b / p2.RGBA.b) * 255));
+        p1.RGBA.a =
+            (uint8_t)(floorf(((NaClO_float)p1.RGBA.a / p2.RGBA.a) * 255));
         break;
       case NaClO_L:
         p1.L = p1.L / p2.L;
