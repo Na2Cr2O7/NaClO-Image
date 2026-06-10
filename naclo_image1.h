@@ -4202,7 +4202,9 @@ NaClO_ErrorType NaClO_Screened(NaClO_Image *I1, NaClO_Image *I2) {
         p1.L = 255 - ((255 - (p2.L * 255)) * (255 - (p1.L * 255))) / 255;
         break;
       case NaClO_1:
-        p1.value = (255 - ((255 - (p2.value * 255)) * (255 - (p1.value * 255))) / 255 )>127;
+        p1.value =
+            (255 -
+             ((255 - (p2.value * 255)) * (255 - (p1.value * 255))) / 255) > 127;
         break;
       }
       *NaClO_Pixel(I1, x, y) = p1;
@@ -4214,11 +4216,55 @@ NaClO_ErrorType NaClO_Screened(NaClO_Image *I1, NaClO_Image *I2) {
 NaClO_ImageResult NaClO_Screen(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_Screened);
 }
-NaClO_ErrorType NaClO_ColorDodged(NaClO_Image *I1, NaClO_Image *I2)
-{
+NaClO_ErrorType NaClO_ColorDodged(NaClO_Image *I1, NaClO_Image *I2) {
   __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
 
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r =
+            (NaClO_float)(p1.RGB.r + (p2.RGB.r * p1.RGB.r)) / (255 - p2.RGB.r);
+        p1.RGB.g =
+            (NaClO_float)(p1.RGB.g + (p2.RGB.g * p1.RGB.g)) / (255 - p2.RGB.g);
+        p1.RGB.b =
+            (NaClO_float)(p1.RGB.b + (p2.RGB.b * p1.RGB.b)) / (255 - p2.RGB.b);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = (NaClO_float)(p1.RGBA.r + (p2.RGBA.r * p1.RGBA.r)) /
+                    (255 - p2.RGBA.r);
+        p1.RGBA.g = (NaClO_float)(p1.RGBA.g + (p2.RGBA.g * p1.RGBA.g)) /
+                    (255 - p2.RGBA.g);
+        p1.RGBA.b = (NaClO_float)(p1.RGBA.b + (p2.RGBA.b * p1.RGBA.b)) /
+                    (255 - p2.RGBA.b);
+        p1.RGBA.a = (NaClO_float)(p1.RGBA.a + (p2.RGBA.a * p1.RGBA.a)) /
+                    (255 - p2.RGBA.a);
+        break;
+      case NaClO_L:
+        p1.L = ((p1.L * 255) + ((p2.L * 255) * (p1.L * 255))) /
+               (255 - (p2.L * 255));
+        break;
+      case NaClO_1:
+        p1.value =
+            (((NaClO_int)p1.value * 255) +
+             (((NaClO_int)p1.value * 255) * ((NaClO_int)p1.value * 255))) /
+                (255 - ((NaClO_int)p1.value * 255)) >
+            127;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
 }
+NaClO_ImageResult NaClO_ColorDodge(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_ColorDodged);
+}
+
 #ifdef __cplusplus
 }
 #endif
