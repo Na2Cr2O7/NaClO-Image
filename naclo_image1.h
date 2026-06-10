@@ -4776,26 +4776,26 @@ NaClO_ErrorType NaClO_HardMixed(NaClO_Image *I1, NaClO_Image *I2) {
 
       switch (I1->mode) {
       case NaClO_RGB:
-        p1.RGB.r = (NaClO_uint)p1.RGB.r + p2.RGB.r ? 0 : 255;
-        p1.RGB.g = (NaClO_uint)p1.RGB.g + p2.RGB.g ? 0 : 255;
-        p1.RGB.b = (NaClO_uint)p1.RGB.b + p2.RGB.b ? 0 : 255;
+        p1.RGB.r = (NaClO_uint)p1.RGB.r + p2.RGB.r < 255 ? 0 : 255;
+        p1.RGB.g = (NaClO_uint)p1.RGB.g + p2.RGB.g < 255 ? 0 : 255;
+        p1.RGB.b = (NaClO_uint)p1.RGB.b + p2.RGB.b < 255 ? 0 : 255;
         break;
       case NaClO_RGBA:
-        p1.RGBA.r = (NaClO_uint)p1.RGBA.r + p2.RGBA.r ? 0 : 255;
-        p1.RGBA.g = (NaClO_uint)p1.RGBA.g + p2.RGBA.g ? 0 : 255;
-        p1.RGBA.b = (NaClO_uint)p1.RGBA.b + p2.RGBA.b ? 0 : 255;
-        p1.RGBA.a = (NaClO_uint)p1.RGBA.a + p2.RGBA.a ? 0 : 255;
+        p1.RGBA.r = (NaClO_uint)p1.RGBA.r + p2.RGBA.r < 255 ? 0 : 255;
+        p1.RGBA.g = (NaClO_uint)p1.RGBA.g + p2.RGBA.g < 255 ? 0 : 255;
+        p1.RGBA.b = (NaClO_uint)p1.RGBA.b + p2.RGBA.b < 255 ? 0 : 255;
+        p1.RGBA.a = (NaClO_uint)p1.RGBA.a + p2.RGBA.a < 255 ? 0 : 255;
         break;
       case NaClO_L:
         p1.L *= 255;
         p2.L *= 255;
-        p1.L = (NaClO_uint)p1.L + p2.L ? 0 : 255;
+        p1.L = (NaClO_uint)p1.L + p2.L < 255 ? 0 : 255;
         p1.L /= 255;
         break;
       case NaClO_1:
         NaClO_float v1 = (NaClO_float)p1.value * 255;
         NaClO_float v2 = (NaClO_float)p2.value * 255;
-        v1 = (NaClO_uint)v1 + v2 ? 0 : 255;
+        v1 = (NaClO_uint)v1 + v2 < 255 ? 0 : 255;
         v1 /= 255;
         p1.value = v1 <= 127;
         break;
@@ -4808,6 +4808,102 @@ NaClO_ErrorType NaClO_HardMixed(NaClO_Image *I1, NaClO_Image *I2) {
 }
 NaClO_ImageResult NaClO_HardMix(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_HardMixed);
+}
+
+NaClO_ErrorType NaClO_GetDifference(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = abs((NaClO_int)p2.RGB.r - p1.RGB.r);
+        p1.RGB.g = abs((NaClO_int)p2.RGB.g - p1.RGB.g);
+        p1.RGB.b = abs((NaClO_int)p2.RGB.b - p1.RGB.b);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = abs((NaClO_int)p2.RGBA.r - p1.RGBA.r);
+        p1.RGBA.g = abs((NaClO_int)p2.RGBA.g - p1.RGBA.g);
+        p1.RGBA.b = abs((NaClO_int)p2.RGBA.b - p1.RGBA.b);
+        p1.RGBA.a = abs((NaClO_int)p2.RGBA.a - p1.RGBA.a);
+        break;
+      case NaClO_L:
+        p1.L *= 255;
+        p2.L *= 255;
+        p1.L = abs((NaClO_int)p2.L - p1.L);
+        p1.L /= 255;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+        v1 = abs((NaClO_int)v2 - v1);
+        v1 /= 255;
+        p1.value = v1 <= 127;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Difference(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_GetDifference);
+}
+
+NaClO_ErrorType NaClO_Excluded(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = ((NaClO_float)p2.RGB.r + p1.RGB.r) -
+                   (NaClO_float)p2.RGB.r * (NaClO_float)p1.RGB.r / 128;
+        p1.RGB.g = ((NaClO_float)p2.RGB.g + p1.RGB.g) -
+                   (NaClO_float)p2.RGB.g * (NaClO_float)p1.RGB.g / 128;
+        p1.RGB.b = ((NaClO_float)p2.RGB.b + p1.RGB.b) -
+                   (NaClO_float)p2.RGB.b * (NaClO_float)p1.RGB.b / 128;
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = ((NaClO_float)p2.RGBA.r + p1.RGBA.r) -
+                    (NaClO_float)p2.RGBA.r * (NaClO_float)p1.RGBA.r / 128;
+        p1.RGBA.g = ((NaClO_float)p2.RGBA.g + p1.RGBA.g) -
+                    (NaClO_float)p2.RGBA.g * (NaClO_float)p1.RGBA.g / 128;
+        p1.RGBA.b = ((NaClO_float)p2.RGBA.b + p1.RGBA.b) -
+                    (NaClO_float)p2.RGBA.b * (NaClO_float)p1.RGBA.b / 128;
+        p1.RGBA.a = ((NaClO_float)p2.RGBA.a + p1.RGBA.a) -
+                    (NaClO_float)p2.RGBA.a * (NaClO_float)p1.RGBA.a / 128;
+        break;
+      case NaClO_L:
+        p1.L *= 255;
+        p2.L *= 255;
+        p1.L = ((NaClO_float)p2.L + p1.L) -
+               (NaClO_float)p2.L * (NaClO_float)p1.L / 128;
+        p1.L /= 255;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+        v1 = ((NaClO_float)v2 + v1) - (NaClO_float)v2 * (NaClO_float)v1 / 128;
+        v1 /= 255;
+        p1.value = v1 <= 127;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Exclusion(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_Excluded);
 }
 #ifdef __cplusplus
 }
