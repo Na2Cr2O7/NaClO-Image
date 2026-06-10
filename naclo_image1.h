@@ -326,6 +326,28 @@ NaClO_ErrorType NaClO_RGBHistogram(NaClO_Image *data, NaClO_uint *outRHistogram,
                                    NaClO_uint *outBHistogram
 
 );
+NaClO_ImageResult NaClO_HistogramEqualization(NaClO_Image *data);
+NaClO_ErrorType NaClO_HistogramEqualized(NaClO_Image *data);
+NaClO_ErrorType NaClO_PremultipliedAlpha(NaClO_Image *data);
+NaClO_ImageResult NaClO_AlphaPremultiplication(NaClO_Image *data);
+NaClO_ErrorType NaClO_Sharpened(NaClO_Image *data);
+NaClO_ErrorType NaClO_Reversed(NaClO_Image *data);
+NaClO_ImageResult NaClO_ReverseImage(NaClO_Image *data);
+NaClO_ErrorType NaClO_Blended(NaClO_Image *I1, NaClO_Image *I2,
+                              NaClO_float ratio);
+NaClO_ImageResult NaClO_Blend(NaClO_Image *I1, NaClO_Image *I2,
+                              NaClO_float ratio);
+NaClO_ErrorType NaClO_Dissolved(NaClO_Image *I1, NaClO_Image *I2,
+                                NaClO_float ratio);
+NaClO_ImageResult NaClO_Dissolve(NaClO_Image *I1, NaClO_Image *I2,
+                                 NaClO_float ratio);
+NaClO_ImageResult NaClO_Lighten(NaClO_Image *I1, NaClO_Image *I2);
+NaClO_ErrorType NaClO_Darkened(NaClO_Image *I1, NaClO_Image *I2);
+NaClO_ImageResult NaClO_Darken(NaClO_Image *I1, NaClO_Image *I2);
+NaClO_ErrorType NaClO_Multiplied(NaClO_Image *I1, NaClO_Image *I2);
+NaClO_ImageResult NaClO_Multiply(NaClO_Image *I1, NaClO_Image *I2);
+#define NaClO_Burnt(I1, I2) NaClO_Burned(I1, I2)
+NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, NaClO_Image *I2);
 #define NaClO_Unwrap(r) (assert((r).Error == NACLO_OK), (r).result)
 #define NaClO_EdgeDetect(data) NaClO_Sobel(data)
 #define NaClO_MakeHistogram(name) NaClO_uint name[256]
@@ -3979,6 +4001,78 @@ NaClO_ImageResult NaClO_Darken(NaClO_Image *I1, NaClO_Image *I2) {
   }
   T.Error = NaClO_Darkened(&T.result, I2);
   return T;
+}
+NaClO_ErrorType NaClO_Multiplied(NaClO_Image *I1, NaClO_Image *I2) {
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ImageResult I22 = NaClO_ConvertE(I2, I1->mode);
+  if (I22.Error != NACLO_OK) {
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    return t;
+  }
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = ((NaClO_float)p1.RGB.r * (NaClO_float)p2.RGB.r) / (255.0f);
+        p1.RGB.g = ((NaClO_float)p1.RGB.g * (NaClO_float)p2.RGB.g) / (255.0f);
+        p1.RGB.b = ((NaClO_float)p1.RGB.b * (NaClO_float)p2.RGB.b) / (255.0f);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r =
+            ((NaClO_float)p1.RGBA.r * (NaClO_float)p2.RGBA.r) / (255.0f);
+        p1.RGBA.g =
+            ((NaClO_float)p1.RGBA.g * (NaClO_float)p2.RGBA.g) / (255.0f);
+        p1.RGBA.b =
+            ((NaClO_float)p1.RGBA.b * (NaClO_float)p2.RGBA.b) / (255.0f);
+        p1.RGBA.a =
+            ((NaClO_float)p1.RGBA.a * (NaClO_float)p2.RGBA.a) / (255.0f);
+        break;
+      case NaClO_L:
+        p1.L = p1.L * p2.L;
+        break;
+      case NaClO_1:
+        p1.value = p1.value and p2.value;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Multiply(NaClO_Image *I1, NaClO_Image *I2) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Multiplied(&T.result, I2);
+  return T;
+}
+NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, NaClO_Image *I2) {
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ImageResult I22 = NaClO_ConvertE(I2, I1->mode);
+  if (I22.Error != NACLO_OK) {
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    return t;
+  }
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+    }
+  }
 }
 
 #ifdef __cplusplus

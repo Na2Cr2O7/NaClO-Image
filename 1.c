@@ -574,6 +574,14 @@ int main() {
     NaClO_SaveAndFree(&src.result, "darken.png");
     NaClO_FreeImage(&src2.result);
   }
+  {
+    printf("multiply\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_Multiplied(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, "multiply.png");
+    NaClO_FreeImage(&src2.result);
+  }
   //   {
   //       printf("Perspective\n");
   //     NaClO_ImageResult src = NaClO_Load("color.png");
