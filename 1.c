@@ -630,6 +630,14 @@ int main() {
     NaClO_SaveAndFree(&src.result, "overlay.png");
     NaClO_FreeImage(&src2.result);
   }
+  {
+    printf("softlight\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_SoftLight(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, "softlight.png");
+    NaClO_FreeImage(&src2.result);
+  }
   //   {
   //       printf("Perspective\n");
   //     NaClO_ImageResult src = NaClO_Load("color.png");
