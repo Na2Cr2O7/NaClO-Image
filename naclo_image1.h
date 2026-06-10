@@ -4071,10 +4071,90 @@ NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, NaClO_Image *I2) {
   }
   for (int x = 0; x < I1->width; ++x) {
     for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+      NaClO_float tmp = 0;
+      switch (I1->mode) {
+      case NaClO_RGB:
+        // 结果色 = (基色 + 混合色 - 255) * 255 / 混合色
+        tmp = (p1.RGB.r + p2.RGB.r - 255);
+        if (tmp <= 0) {
+          p1.RGB.r = 0;
+        } else {
+          p1.RGB.r = (tmp * (255.0f)) / p2.RGB.r;
+        }
+
+        tmp = (p1.RGB.g + p2.RGB.g - 255);
+        if (tmp <= 0) {
+          p1.RGB.g = 0;
+        } else {
+          p1.RGB.g = (tmp * (255.0f)) / p2.RGB.g;
+        }
+
+        tmp = (p1.RGB.b + p2.RGB.b - 255);
+        if (tmp <= 0) {
+          p1.RGB.b = 0;
+        } else {
+          p1.RGB.b = (tmp * (255.0f)) / p2.RGB.b;
+        }
+        break;
+      case NaClO_RGBA:
+        tmp = (p1.RGBA.r + p2.RGBA.r - 255);
+        if (tmp <= 0) {
+          p1.RGBA.r = 0;
+        } else {
+          p1.RGBA.r = (tmp * (255.0f)) / p2.RGBA.r;
+        }
+
+        tmp = (p1.RGBA.g + p2.RGBA.g - 255);
+        if (tmp <= 0) {
+          p1.RGBA.g = 0;
+        } else {
+          p1.RGBA.g = (tmp * (255.0f)) / p2.RGBA.g;
+        }
+
+        tmp = (p1.RGBA.b + p2.RGBA.b - 255);
+        if (tmp <= 0) {
+          p1.RGBA.b = 0;
+        } else {
+          p1.RGBA.b = (tmp * (255.0f)) / p2.RGBA.b;
+        }
+
+        tmp = (p1.RGBA.a + p2.RGBA.a - 255);
+        if (tmp <= 0) {
+          p1.RGBA.a = 0;
+        } else {
+          p1.RGBA.a = (tmp * (255.0f)) / p2.RGBA.a;
+        }
+        break;
+
+      case NaClO_L:
+        tmp = (p1.L * 255 + p2.L * 255 - 255);
+        if (tmp <= 0) {
+          p1.L = 0;
+        } else {
+          p1.L = ((tmp * (255.0f)) / p2.L * 255) / 255.0f;
+        }
+        break;
+      case NaClO_1:
+        p1.value = p1.value and p2.value;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
     }
   }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
 }
-
+NaClO_ImageResult NaClO_Burn(NaClO_Image *I1, NaClO_Image *I2) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Burned(&T.result, I2);
+  return T;
+}
 #ifdef __cplusplus
 }
 #endif
