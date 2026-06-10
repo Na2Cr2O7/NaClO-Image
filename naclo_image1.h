@@ -4403,7 +4403,7 @@ NaClO_ImageResult NaClO_Overlay(NaClO_Image *I1, NaClO_Image *I2) {
 
 NaClO_ErrorType NaClO_SetSoftLight(NaClO_Image *I1, NaClO_Image *I2) {
   NaClO_ColorMode mode = I1->mode;
-  if (I1 == __null or I2 == __null) {
+  if (I1 == NULL or I2 == NULL) {
     return NACLO_NULL_POINTER;
   }
   NaClO_ErrorType t1 = NaClO_Converted(I1, "rgba");
