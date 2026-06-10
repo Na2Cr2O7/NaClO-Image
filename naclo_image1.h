@@ -4748,13 +4748,10 @@ NaClO_ErrorType NaClO_PinnedLight(NaClO_Image *I1, NaClO_Image *I2) {
         NaClO_float v2 = (NaClO_float)p2.value * 255;
 
         v1 *= 255;
-        v1 *= 255;
         v2 *= 255;
         v1 = v2 <= 128 ? __naclo__min(v1, 2 * v1)
                        : __naclo__min(v1, (uint8_t)((NaClO_int)2 * v1 - 255));
         v1 /= 255;
-        v1 /= 255;
-
         p1.value = v1 <= 127;
 
         break;
@@ -4767,6 +4764,50 @@ NaClO_ErrorType NaClO_PinnedLight(NaClO_Image *I1, NaClO_Image *I2) {
 }
 NaClO_ImageResult NaClO_PinLight(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_PinnedLight);
+}
+
+NaClO_ErrorType NaClO_HardMixed(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = (NaClO_uint)p1.RGB.r + p2.RGB.r ? 0 : 255;
+        p1.RGB.g = (NaClO_uint)p1.RGB.g + p2.RGB.g ? 0 : 255;
+        p1.RGB.b = (NaClO_uint)p1.RGB.b + p2.RGB.b ? 0 : 255;
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = (NaClO_uint)p1.RGBA.r + p2.RGBA.r ? 0 : 255;
+        p1.RGBA.g = (NaClO_uint)p1.RGBA.g + p2.RGBA.g ? 0 : 255;
+        p1.RGBA.b = (NaClO_uint)p1.RGBA.b + p2.RGBA.b ? 0 : 255;
+        p1.RGBA.a = (NaClO_uint)p1.RGBA.a + p2.RGBA.a ? 0 : 255;
+        break;
+      case NaClO_L:
+        p1.L *= 255;
+        p2.L *= 255;
+        p1.L = (NaClO_uint)p1.L + p2.L ? 0 : 255;
+        p1.L /= 255;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+        v1 = (NaClO_uint)v1 + v2 ? 0 : 255;
+        v1 /= 255;
+        p1.value = v1 <= 127;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_HardMix(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_HardMixed);
 }
 #ifdef __cplusplus
 }
