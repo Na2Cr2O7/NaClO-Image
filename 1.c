@@ -700,6 +700,15 @@ int main() {
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
   }
+    {
+    const char *f = "subtract.png";
+    printf("%s\n", f);
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_Subtracted(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, f);
+    NaClO_FreeImage(&src2.result);
+  }
   //   {
   //       printf("Perspective\n");
   //     NaClO_ImageResult src = NaClO_Load("color.png");

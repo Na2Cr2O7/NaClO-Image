@@ -4905,6 +4905,47 @@ NaClO_ErrorType NaClO_Excluded(NaClO_Image *I1, NaClO_Image *I2) {
 NaClO_ImageResult NaClO_Exclusion(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_Excluded);
 }
+
+NaClO_ErrorType NaClO_Subtracted(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = __naclo__max((NaClO_int)p1.RGB.r - p2.RGB.r, 0);
+        p1.RGB.g = __naclo__max((NaClO_int)p1.RGB.g - p2.RGB.g, 0);
+        p1.RGB.b = __naclo__max((NaClO_int)p1.RGB.b - p2.RGB.b, 0);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = __naclo__max((NaClO_int)p1.RGBA.r - p2.RGBA.r, 0);
+        p1.RGBA.g = __naclo__max((NaClO_int)p1.RGBA.g - p2.RGBA.g, 0);
+        p1.RGBA.b = __naclo__max((NaClO_int)p1.RGBA.b - p2.RGBA.b, 0);
+        p1.RGBA.a = __naclo__max((NaClO_int)p1.RGBA.a - p2.RGBA.a, 0);
+        break;
+      case NaClO_L:
+        p1.L = __naclo__max(p1.L - p2.L, 0);
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+        v1 = __naclo__max(v1 - v2, 0);
+        v1 /= 255;
+        p1.value = v1 <= 127;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Subtract(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_Subtracted);
+}
 #ifdef __cplusplus
 }
 #endif
