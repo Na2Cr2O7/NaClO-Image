@@ -155,7 +155,15 @@ typedef enum {
   NACLO_EXPAND_MIRROR,
   NACLO_EXPAND_EDGE
 } NaClO_ExpandMode;
-
+typedef union {
+  struct {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+  };
+  NaClO_ColorModeRGB RGB;
+  NaClO_ColorModeRGBA RGBA;
+} NaClO_UnionRGB;
 typedef NaClO_PixelType (*NaClO_SetPixelFunctionPointer)(NaClO_PixelType p,
                                                          NaClO_ColorMode mode);
 
@@ -1420,6 +1428,9 @@ NaClO_ColorModeRGB NaClO_GetRGB(NaClO_HSV src) {
   ret.g = (uint8_t)(g_f * 255.0f + 0.5f);
   ret.b = (uint8_t)(b_f * 255.0f + 0.5f);
   return ret;
+}
+NaClO_float NaClO_Luminance(NaClO_UnionRGB rgba) {
+  return 0.299f * rgba.r + 0.587f * rgba.g + 0.114f*rgba.b;
 }
 
 void NaClO_EnumeratePixel(NaClO_Image *src, NaClO_SetPixelFunctionPointer f) {
