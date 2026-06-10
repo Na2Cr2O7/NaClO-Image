@@ -647,19 +647,29 @@ int main() {
     NaClO_FreeImage(&src2.result);
   }
   {
-    const char* f="vividlight.png";
-    printf("%s\n",f);
+    const char *f = "vividlight.png";
+    printf("%s\n", f);
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
     NaClO_SetVividLight(&src.result, &src2.result);
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
-  }  {
-    const char* f="linearlight.png";
-    printf("%s\n",f);
+  }
+  {
+    const char *f = "linearlight.png";
+    printf("%s\n", f);
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
     NaClO_SetLinearLight(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, f);
+    NaClO_FreeImage(&src2.result);
+  }
+  {
+    const char *f = "pinnedlight.png";
+    printf("%s\n", f);
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_PinnedLight(&src.result, &src2.result);
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
   }

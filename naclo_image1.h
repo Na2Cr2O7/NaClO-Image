@@ -4604,6 +4604,8 @@ NaClO_ErrorType NaClO_SetVividLight(NaClO_Image *I1, NaClO_Image *I2) {
         break;
       case NaClO_L:
         p1.L *= 255;
+        p2.L *= 255;
+
         p1.L = p1.L <= 128
                    ? p1.L - (NaClO_float)(255 - p1.L) *
                                 (NaClO_float)(255 - 2 * p2.L) /
@@ -4659,6 +4661,8 @@ NaClO_ErrorType NaClO_SetLinearLight(NaClO_Image *I1, NaClO_Image *I2) {
         break;
       case NaClO_L:
         p1.L *= 255;
+        p2.L *= 255;
+
         p1.L = __naclo__min((NaClO_uint)p2.L * 2 + p1.L - 255, 255);
         p1.L /= 255;
         break;
@@ -4682,6 +4686,87 @@ NaClO_ErrorType NaClO_SetLinearLight(NaClO_Image *I1, NaClO_Image *I2) {
 }
 NaClO_ImageResult NaClO_LinearLight(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_SetLinearLight);
+}
+
+NaClO_ErrorType NaClO_PinnedLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = p2.RGB.r <= 128
+                       ? __naclo__min(p1.RGB.r, 2 * p1.RGB.r)
+                       : __naclo__min(p1.RGB.r,
+                                      (uint8_t)((NaClO_int)2 * p1.RGB.r - 255));
+
+        p1.RGB.g = p2.RGB.g <= 128
+                       ? __naclo__min(p1.RGB.g, 2 * p1.RGB.g)
+                       : __naclo__min(p1.RGB.g,
+                                      (uint8_t)((NaClO_int)2 * p1.RGB.g - 255));
+
+        p1.RGB.b = p2.RGB.b <= 128
+                       ? __naclo__min(p1.RGB.b, 2 * p1.RGB.b)
+                       : __naclo__min(p1.RGB.b,
+                                      (uint8_t)((NaClO_int)2 * p1.RGB.b - 255));
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r =
+            p2.RGBA.r <= 128
+                ? __naclo__min(p1.RGBA.r, 2 * p1.RGBA.r)
+                : __naclo__min(p1.RGBA.r,
+                               (uint8_t)((NaClO_int)2 * p1.RGBA.r - 255));
+        p1.RGBA.g =
+            p2.RGBA.g <= 128
+                ? __naclo__min(p1.RGBA.g, 2 * p1.RGBA.g)
+                : __naclo__min(p1.RGBA.g,
+                               (uint8_t)((NaClO_int)2 * p1.RGBA.g - 255));
+        p1.RGBA.b =
+            p2.RGBA.b <= 128
+                ? __naclo__min(p1.RGBA.b, 2 * p1.RGBA.b)
+                : __naclo__min(p1.RGBA.b,
+                               (uint8_t)((NaClO_int)2 * p1.RGBA.b - 255));
+        p1.RGBA.a =
+            p2.RGBA.a <= 128
+                ? __naclo__min(p1.RGBA.a, 2 * p1.RGBA.a)
+                : __naclo__min(p1.RGBA.a,
+                               (uint8_t)((NaClO_int)2 * p1.RGBA.a - 255));
+        break;
+      case NaClO_L:
+        p1.L *= 255;
+        p2.L *= 255;
+        p1.L = p2.L <= 128
+                   ? __naclo__min(p1.L, 2 * p1.L)
+                   : __naclo__min(p1.L, (uint8_t)((NaClO_int)2 * p1.L - 255));
+        p1.L /= 255;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+
+        v1 *= 255;
+        v1 *= 255;
+        v2 *= 255;
+        v1 = v2 <= 128 ? __naclo__min(v1, 2 * v1)
+                       : __naclo__min(v1, (uint8_t)((NaClO_int)2 * v1 - 255));
+        v1 /= 255;
+        v1 /= 255;
+
+        p1.value = v1 <= 127;
+
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_PinLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_PinnedLight);
 }
 #ifdef __cplusplus
 }
