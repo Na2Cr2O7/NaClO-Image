@@ -4946,6 +4946,46 @@ NaClO_ErrorType NaClO_Subtracted(NaClO_Image *I1, NaClO_Image *I2) {
 NaClO_ImageResult NaClO_Subtract(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_Subtracted);
 }
+
+NaClO_ErrorType NaClO_Divided(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = (uint8_t)floorf((NaClO_float)p1.RGB.r / p2.RGB.r);
+        p1.RGB.g = (uint8_t)floorf((NaClO_float)p1.RGB.g / p2.RGB.g);
+        p1.RGB.b = (uint8_t)floorf((NaClO_float)p1.RGB.b / p2.RGB.b);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = (uint8_t)floorf((NaClO_float)p1.RGBA.r / p2.RGBA.r);
+        p1.RGBA.g = (uint8_t)floorf((NaClO_float)p1.RGBA.g / p2.RGBA.g);
+        p1.RGBA.b = (uint8_t)floorf((NaClO_float)p1.RGBA.b / p2.RGBA.b);
+        p1.RGBA.a = (uint8_t)floorf((NaClO_float)p1.RGBA.a / p2.RGBA.a);
+        break;
+      case NaClO_L:
+        p1.L = p1.L /p2.L;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value;
+        NaClO_float v2 = (NaClO_float)p2.value;
+        v1 = v1 /v2;
+        p1.value = v1 <= 127;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Divide(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_Divided);
+}
 #ifdef __cplusplus
 }
 #endif
