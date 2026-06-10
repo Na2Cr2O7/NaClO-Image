@@ -614,6 +614,14 @@ int main() {
     NaClO_SaveAndFree(&src.result, "colordodged.png");
     NaClO_FreeImage(&src2.result);
   }
+  {
+    printf("linearDodge\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_LinearDodged(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, "lineardodged.png");
+    NaClO_FreeImage(&src2.result);
+  }
   //   {
   //       printf("Perspective\n");
   //     NaClO_ImageResult src = NaClO_Load("color.png");

@@ -4264,7 +4264,82 @@ NaClO_ErrorType NaClO_ColorDodged(NaClO_Image *I1, NaClO_Image *I2) {
 NaClO_ImageResult NaClO_ColorDodge(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_ColorDodged);
 }
+NaClO_ErrorType NaClO_LinearDodged(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
 
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = __naclo__min(p1.RGB.r + p2.RGB.r, 255);
+        p1.RGB.g = __naclo__min(p1.RGB.g + p2.RGB.g, 255);
+        p1.RGB.b = __naclo__min(p1.RGB.b + p2.RGB.b, 255);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = __naclo__min(p1.RGBA.r + p2.RGBA.r, 255);
+        p1.RGBA.g = __naclo__min(p1.RGBA.g + p2.RGBA.g, 255);
+        p1.RGBA.b = __naclo__min(p1.RGBA.b + p2.RGBA.b, 255);
+        p1.RGBA.a = __naclo__min(p1.RGBA.a + p2.RGBA.a, 255);
+        break;
+      case NaClO_L:
+        p1.L = __naclo__min(p1.L + p2.L, 1.0f);
+        break;
+      case NaClO_1:
+        p1.value = ((NaClO_uint)p1.value + p2.value) > 1;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_LinearDodge(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_LinearDodged);
+}
+NaClO_ErrorType NaClO_SetMax(NaClO_Image *I1, NaClO_Image *I2) {
+
+  // TODO:
+  __naclo__2imgprol();
+
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        if (p1.RGB.r + p1.RGB.g + p1.RGB.b <= p2.RGB.r + p2.RGB.g + p2.RGB.b) {
+          p1 = p2;
+        }
+        break;
+      case NaClO_RGBA:
+        if (p1.RGBA.r + p1.RGBA.g + p1.RGBA.b + p1.RGBA.a <=
+            p2.RGBA.r + p2.RGBA.g + p2.RGBA.b + p2.RGBA.a) {
+          p1 = p2;
+        }
+        break;
+      case NaClO_L:
+        p1.L = __naclo__max(p1.L, p2.L);
+        break;
+      case NaClO_1:
+        p1.value = p1.value or p2.value;
+
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Max(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_SetMax);
+}
 #ifdef __cplusplus
 }
 #endif
