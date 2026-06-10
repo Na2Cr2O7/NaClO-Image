@@ -669,11 +669,12 @@ NaClO_ImageResult NaClO_Resize(NaClO_Image *data, NaClO_uint w, NaClO_uint h) {
 NaClO_ErrorType NaClO_Resized(NaClO_Image *data, NaClO_uint w, NaClO_uint h) {
   NaClO_ImageResult r = NaClO_Resize(data, w, h);
   if (r.Error != NACLO_OK) {
-    // NaClO_FreeImage(&r.result);
+    NaClO_FreeImage(&r.result);
     return r.Error;
   }
   NaClO_ErrorType err = NaClO_FreeImage(data);
   if (err != NACLO_OK) {
+    NaClO_FreeImage(&r.result);
     return err;
   }
   *data = r.result;
@@ -906,7 +907,9 @@ NaClO_ImageResult NaClO_ConvertE(NaClO_Image *data, NaClO_ColorMode mode) {
       __naclo_1_to_RGB(&T.result, data);
       break;
     default:
-      __NaClO__makeError(T, NACLO_UNKNOWN_CHANNEL);
+      NaClO_FreeImage(&T.result);
+      T.Error = NACLO_UNKNOWN_CHANNEL;
+      return T;
     }
   } else if (mode == NaClO_RGBA) {
     switch (data->mode) {
@@ -929,7 +932,9 @@ NaClO_ImageResult NaClO_ConvertE(NaClO_Image *data, NaClO_ColorMode mode) {
       break;
     }
     default:
-      __NaClO__makeError(T, NACLO_UNKNOWN_CHANNEL);
+      NaClO_FreeImage(&T.result);
+      T.Error = NACLO_UNKNOWN_CHANNEL;
+      return T;
     }
   } else if (mode == NaClO_L) {
     switch (data->mode) {
@@ -947,7 +952,9 @@ NaClO_ImageResult NaClO_ConvertE(NaClO_Image *data, NaClO_ColorMode mode) {
       break;
     }
     default:
-      __NaClO__makeError(T, NACLO_UNKNOWN_CHANNEL);
+      NaClO_FreeImage(&T.result);
+      T.Error = NACLO_UNKNOWN_CHANNEL;
+      return T;
     }
   } else if (mode == NaClO_1) {
     __naclo_any_to_1(&T.result, data);
@@ -1001,11 +1008,12 @@ NaClO_ImageResult NaClO_Convert(NaClO_Image *data, const char *mode_str) {
 NaClO_ErrorType NaClO_Converted(NaClO_Image *data, const char *mode_str) {
   NaClO_ImageResult r = NaClO_Convert(data, mode_str);
   if (r.Error != NACLO_OK) {
-    // NaClO_FreeImage(&r.result);
+    NaClO_FreeImage(&r.result);
     return r.Error;
   }
   NaClO_ErrorType err = NaClO_FreeImage(data);
   if (err != NACLO_OK) {
+    NaClO_FreeImage(&r.result);
     return err;
   }
   *data = r.result;
@@ -1014,11 +1022,12 @@ NaClO_ErrorType NaClO_Converted(NaClO_Image *data, const char *mode_str) {
 NaClO_ErrorType NaClO_ConvertedE(NaClO_Image *data, NaClO_ColorMode mode) {
   NaClO_ImageResult r = NaClO_ConvertE(data, mode);
   if (r.Error != NACLO_OK) {
-    // NaClO_FreeImage(&r.result);
+    NaClO_FreeImage(&r.result);
     return r.Error;
   }
   NaClO_ErrorType err = NaClO_FreeImage(data);
   if (err != NACLO_OK) {
+    NaClO_FreeImage(&r.result);
     return err;
   }
   *data = r.result;
@@ -4352,43 +4361,54 @@ NaClO_ErrorType NaClO_Overlaid(NaClO_Image *I1, NaClO_Image *I2) {
       switch (I1->mode) {
       case NaClO_RGB:
         p1.RGB.r = p1.RGB.r <= 128
-                       ? (NaClO_uint)p1.RGB.r * p2.RGB.r / 255
+                       ? (NaClO_uint)p1.RGB.r * 2 * p2.RGB.r / 255
                        : 255 - (255 - p2.RGB.r) * (255 - p1.RGB.r) / 128;
-        p1.RGB.g = p1.RGB.g <= 128 ? (NaClO_uint)p1.RGB.g * p2.RGB.g / 255
-                                   : (NaClO_uint)255 -
-                                         (NaClO_uint)(255 - p2.RGB.g) *
-                                             (NaClO_uint)(255 - p1.RGB.g) / 128;
-        p1.RGB.b = p1.RGB.b <= 128 ? (NaClO_uint)p1.RGB.b * p2.RGB.b / 255
+        p1.RGB.g = p1.RGB.g <= 128
+                       ? (NaClO_uint)p1.RGB.g * 2 * 2 * p2.RGB.g / 255
+                       : (NaClO_uint)255 - (NaClO_uint)(255 - p2.RGB.g) *
+                                               (NaClO_uint)(255 - p1.RGB.g) /
+                                               128;
+        p1.RGB.b = p1.RGB.b <= 128 ? (NaClO_uint)p1.RGB.b * 2 * p2.RGB.b / 255
                                    : (NaClO_uint)255 -
                                          (NaClO_uint)(255 - p2.RGB.b) *
                                              (NaClO_uint)(255 - p1.RGB.b) / 128;
         break;
       case NaClO_RGBA:
         p1.RGBA.r = p1.RGBA.r <= 128
-                        ? (NaClO_uint)p1.RGBA.r * p2.RGBA.r / 255
+                        ? (NaClO_uint)p1.RGBA.r * 2 * 2 * p2.RGBA.r / 255
                         : (NaClO_uint)255 - (NaClO_uint)(255 - p2.RGBA.r) *
                                                 (NaClO_uint)(255 - p1.RGBA.r) /
                                                 128;
         p1.RGBA.g =
             p1.RGBA.g <= 128
-                ? (NaClO_uint)p1.RGBA.g * p2.RGBA.g / 255
+                ? (NaClO_uint)p1.RGBA.g * 2 * p2.RGBA.g / 255
                 : (NaClO_uint)255 - (255 - p2.RGBA.g) * (255 - p1.RGBA.g) / 128;
         p1.RGBA.b = p1.RGBA.b <= 128
-                        ? (NaClO_uint)p1.RGBA.b * p2.RGBA.b / 255
+                        ? (NaClO_uint)p1.RGBA.b * 2 * p2.RGBA.b / 255
                         : (NaClO_uint)255 - (NaClO_uint)(255 - p2.RGBA.b) *
                                                 (NaClO_uint)(255 - p1.RGBA.b) /
                                                 128;
         p1.RGBA.a = p1.RGBA.a <= 128
-                        ? (NaClO_uint)p1.RGBA.a * p2.RGBA.a / 255
+                        ? (NaClO_uint)p1.RGBA.a * 2 * p2.RGBA.a / 255
                         : (NaClO_uint)255 - (NaClO_uint)(255 - p2.RGBA.a) *
                                                 (NaClO_uint)(255 - p1.RGBA.a) /
                                                 128;
         break;
       case NaClO_L:
-        p1.L = __naclo__min(p1.L + p2.L, 1.0f);
+        p1.L *= 255;
+        p1.L = p1.L <= 128 ? p1.L * p2.L * 2 / 255.0f
+                           : 255 - (255.0f - p1.L) * (255.0f - p2.L) / 128;
+        p1.L /= 255;
         break;
       case NaClO_1:
-        p1.value = ((NaClO_uint)p1.value + p2.value) > 1;
+        NaClO_float v = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+
+        v = v <= 128 ? v * v2 * 2 / 255.0f
+                     : 255 - (255.0f - v) * (255.0f - v2) / 128;
+
+        p1.value = v <= 127;
+
         break;
       }
       *NaClO_Pixel(I1, x, y) = p1;
@@ -4412,18 +4432,18 @@ NaClO_ErrorType NaClO_SetSoftLight(NaClO_Image *I1, NaClO_Image *I2) {
   }
   NaClO_ImageResult I22 = NaClO_Convert(I2, "rgba");
   if (I22.Error != NACLO_OK) {
+    NaClO_FreeImage(&I22.result);
     return I22.Error;
   }
   NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
   if (t != NACLO_OK) {
+    NaClO_FreeImage(&I22.result);
     return t;
-  };
+  }
 
   for (int x = 0; x < I1->width; ++x) {
     for (int y = 0; y < I1->height; ++y) {
-
       NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
-
       NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
       p1.RGBA.r =
           p1.RGBA.r <= 128
@@ -4464,12 +4484,204 @@ NaClO_ErrorType NaClO_SetSoftLight(NaClO_Image *I1, NaClO_Image *I2) {
       *NaClO_Pixel(I1, x, y) = p1;
     }
   }
-  NaClO_ConvertedE(I1, mode);
+  NaClO_ErrorType conv_err = NaClO_ConvertedE(I1, mode);
   NaClO_FreeImage(&I22.result);
-  return NACLO_OK;
+  return conv_err;
 }
 NaClO_ImageResult NaClO_SoftLight(NaClO_Image *I1, NaClO_Image *I2) {
   __NaClO__2(NaClO_SetSoftLight);
+}
+
+NaClO_ErrorType NaClO_SetHardLight(NaClO_Image *I1, NaClO_Image *I2) {
+  NaClO_ColorMode mode = I1->mode;
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ErrorType t1 = NaClO_Converted(I1, "rgba");
+  if (t1 != NACLO_OK) {
+    return t1;
+  }
+  NaClO_ImageResult I22 = NaClO_Convert(I2, "rgba");
+  if (I22.Error != NACLO_OK) {
+    NaClO_FreeImage(&I22.result);
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    NaClO_FreeImage(&I22.result);
+    return t;
+  }
+
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+      p1.RGBA.r = p1.RGBA.r <= 128 ? (NaClO_float)p1.RGBA.r * p2.RGBA.r / 128
+                                   : 255.0f - (255.0f - p2.RGBA.r) *
+                                                  (255.0f - p1.RGBA.r) / 128.0f;
+
+      p1.RGBA.g = p1.RGBA.g <= 128 ? (NaClO_float)p1.RGBA.g * p2.RGBA.g / 128
+                                   : 255.0f - (255.0f - p2.RGBA.g) *
+                                                  (255.0f - p1.RGBA.g) / 128.0f;
+
+      p1.RGBA.b = p1.RGBA.b <= 128 ? (NaClO_float)p1.RGBA.b * p2.RGBA.b / 128
+                                   : 255.0f - (255.0f - p2.RGBA.b) *
+                                                  (255.0f - p1.RGBA.b) / 128.0f;
+
+      p1.RGBA.a = p1.RGBA.a <= 128 ? (NaClO_float)p1.RGBA.a * p2.RGBA.a / 128
+                                   : 255.0f - (255.0f - p2.RGBA.a) *
+                                                  (255.0f - p1.RGBA.a) / 128.0f;
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_ErrorType conv_err = NaClO_ConvertedE(I1, mode);
+  NaClO_FreeImage(&I22.result);
+  return conv_err;
+}
+NaClO_ImageResult NaClO_HardLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_SetHardLight);
+}
+
+NaClO_ErrorType NaClO_SetVividLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = p1.RGB.r <= 128
+                       ? p1.RGB.r - (NaClO_float)(255 - p1.RGB.r) *
+                                        (NaClO_float)(255 - 2 * p2.RGB.r) /
+                                        (NaClO_float)(2 * p2.RGB.r)
+                       : (NaClO_float)p1.RGB.r /
+                             (2 * (255 - (NaClO_float)p2.RGB.r)) * 255;
+
+        p1.RGB.g = p1.RGB.g <= 128
+                       ? p1.RGB.g - (NaClO_float)(255 - p1.RGB.g) *
+                                        (NaClO_float)(255 - 2 * p2.RGB.g) /
+                                        (NaClO_float)(2 * p2.RGB.g)
+                       : (NaClO_float)p1.RGB.g /
+                             (2 * (255 - (NaClO_float)p2.RGB.g)) * 255;
+
+        p1.RGB.b = p1.RGB.b <= 128
+                       ? p1.RGB.b - (NaClO_float)(255 - p1.RGB.b) *
+                                        (NaClO_float)(255 - 2 * p2.RGB.b) /
+                                        (NaClO_float)(2 * p2.RGB.b)
+                       : (NaClO_float)p1.RGB.b /
+                             (2 * (255 - (NaClO_float)p2.RGB.b)) * 255;
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = p1.RGBA.r <= 128
+                        ? p1.RGBA.r - (NaClO_float)(255 - p1.RGBA.r) *
+                                          (NaClO_float)(255 - 2 * p2.RGBA.r) /
+                                          (NaClO_float)(2 * p2.RGBA.r)
+                        : (NaClO_float)p1.RGBA.r /
+                              (2 * (255 - (NaClO_float)p2.RGBA.r)) * 255;
+
+        p1.RGBA.g = p1.RGBA.g <= 128
+                        ? p1.RGBA.g - (NaClO_float)(255 - p1.RGBA.g) *
+                                          (NaClO_float)(255 - 2 * p2.RGBA.g) /
+                                          (NaClO_float)(2 * p2.RGBA.g)
+                        : (NaClO_float)p1.RGBA.g /
+                              (2 * (255 - (NaClO_float)p2.RGBA.g)) * 255;
+
+        p1.RGBA.b = p1.RGBA.b <= 128
+                        ? p1.RGBA.b - (NaClO_float)(255 - p1.RGBA.b) *
+                                          (NaClO_float)(255 - 2 * p2.RGBA.b) /
+                                          (NaClO_float)(2 * p2.RGBA.b)
+                        : (NaClO_float)p1.RGBA.b /
+                              (2 * (255 - (NaClO_float)p2.RGBA.b)) * 255;
+
+        p1.RGBA.a = p1.RGBA.a <= 128
+                        ? p1.RGBA.a - (NaClO_float)(255 - p1.RGBA.a) *
+                                          (NaClO_float)(255 - 2 * p2.RGBA.a) /
+                                          (NaClO_float)(2 * p2.RGBA.a)
+                        : (NaClO_float)p1.RGBA.a /
+                              (2 * (255 - (NaClO_float)p2.RGBA.a)) * 255;
+        break;
+      case NaClO_L:
+        p1.L *= 255;
+        p1.L = p1.L <= 128
+                   ? p1.L - (NaClO_float)(255 - p1.L) *
+                                (NaClO_float)(255 - 2 * p2.L) /
+                                (NaClO_float)(2 * p2.L)
+                   : (NaClO_float)p1.L / (2 * (255 - (NaClO_float)p2.L)) * 255;
+        p1.L /= 255;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+
+        v1 = v1 <= 128
+                 ? v1 - (NaClO_float)(255 - v1) * (NaClO_float)(255 - 2 * v2) /
+                            (NaClO_float)(2 * v2)
+                 : (NaClO_float)v1 / (2 * (255 - (NaClO_float)v2)) * 255;
+
+        p1.value = v1 <= 127;
+
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_VividLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_SetVividLight);
+}
+NaClO_ErrorType NaClO_SetLinearLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __naclo__2imgprol();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = __naclo__min((NaClO_uint)p2.RGB.r * 2 + p1.RGB.r - 255, 255);
+        p1.RGB.g = __naclo__min((NaClO_uint)p2.RGB.g * 2 + p1.RGB.g - 255, 255);
+        p1.RGB.b = __naclo__min((NaClO_uint)p2.RGB.b * 2 + p1.RGB.b - 255, 255);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r =
+            __naclo__min((NaClO_uint)p2.RGBA.r * 2 + p1.RGBA.r - 255, 255);
+        p1.RGBA.g =
+            __naclo__min((NaClO_uint)p2.RGBA.g * 2 + p1.RGBA.g - 255, 255);
+        p1.RGBA.b =
+            __naclo__min((NaClO_uint)p2.RGBA.b * 2 + p1.RGBA.b - 255, 255);
+        p1.RGBA.a =
+            __naclo__min((NaClO_uint)p2.RGBA.a * 2 + p1.RGBA.a - 255, 255);
+        break;
+      case NaClO_L:
+        p1.L *= 255;
+        p1.L = __naclo__min((NaClO_uint)p2.L * 2 + p1.L - 255, 255);
+        p1.L /= 255;
+        break;
+      case NaClO_1:
+        NaClO_float v1 = (NaClO_float)p1.value * 255;
+        NaClO_float v2 = (NaClO_float)p2.value * 255;
+
+        v1 *= 255;
+        v1 = __naclo__min((NaClO_uint)v2 * 2 + v1 - 255, 255);
+        v1 /= 255;
+
+        p1.value = v1 <= 127;
+
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_LinearLight(NaClO_Image *I1, NaClO_Image *I2) {
+  __NaClO__2(NaClO_SetLinearLight);
 }
 #ifdef __cplusplus
 }
