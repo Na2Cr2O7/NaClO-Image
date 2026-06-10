@@ -543,6 +543,12 @@ int main() {
     NaClO_SaveAndFree(&src.result, "line.png");
   }
   {
+    printf("Luminance\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    printf("%f", NaClO_Luminance2(NaClO_Pixel(&src.result, 20, 20)->RGB));
+    NaClO_FreeImage(&src.result);
+  }
+  {
     printf("Blend\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_ImageResult src2 = NaClO_Load("HistEq.png");

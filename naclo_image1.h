@@ -199,6 +199,7 @@ NaClO_ImageResult NaClO_NewImage(NaClO_uint w, NaClO_uint h,
 
 NaClO_ImageResult NaClO_Flip(NaClO_Image *data, NaClO_FlipDirection direction);
 NaClO_ErrorType NaClO_Flipped(NaClO_Image *data, NaClO_FlipDirection direction);
+#define NaClO_Luminance2(color) (0.299f * color.r + 0.587f * color.g + 0.114f * color.b)
 
 /**
  * @brief 按照一个指定轴翻转
@@ -1429,10 +1430,13 @@ NaClO_ColorModeRGB NaClO_GetRGB(NaClO_HSV src) {
   ret.b = (uint8_t)(b_f * 255.0f + 0.5f);
   return ret;
 }
-NaClO_float NaClO_Luminance(NaClO_UnionRGB rgba) {
-  return 0.299f * rgba.r + 0.587f * rgba.g + 0.114f*rgba.b;
-}
 
+NaClO_float NaClO_Luminance(NaClO_ColorModeRGB rgb) {
+  return 0.299f * rgb.r + 0.587f * rgb.g + 0.114f * rgb.b;
+}
+NaClO_float NaClO_LuminanceRGBA(NaClO_ColorModeRGBA rgb) {
+  return 0.299f * rgb.r + 0.587f * rgb.g + 0.114f * rgb.b;
+}
 void NaClO_EnumeratePixel(NaClO_Image *src, NaClO_SetPixelFunctionPointer f) {
   if (f == NULL) {
     return;
