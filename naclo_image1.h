@@ -5089,6 +5089,50 @@ NaClO_ErrorType NaClO_SetSaturation(NaClO_Image *I1, const NaClO_Image *I2) {
 NaClO_ImageResult NaClO_Saturation(const NaClO_Image *I1, const NaClO_Image *I2) {
   __NaClO__2(NaClO_SetSaturation);
 }
+
+
+NaClO_ErrorType NaClO_SetHueSaturation(NaClO_Image *I1, const NaClO_Image *I2) {
+  NaClO_ColorMode mode = I1->mode;
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ErrorType err = NaClO_Converted(I1, "rgba");
+  if (err != NACLO_OK) {
+    return err;
+  }
+  NaClO_ImageResult I22 = NaClO_Convert(I2, "rgba");
+  if (I22.Error != NACLO_OK) {
+    NaClO_FreeImage(&I22.result);
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    NaClO_FreeImage(&I22.result);
+    return t;
+  }
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+      
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+      NaClO_HSV h1=NaClO_GetHSVRGBA(p1.RGBA);
+      NaClO_HSV h2=NaClO_GetHSVRGBA(p2.RGBA);
+      h1.hue=h2.hue;
+      h1.saturation=h2.saturation;
+      NaClO_ColorModeRGB rgb=NaClO_GetRGB(h1);
+      p1.RGBA.r=rgb.r;
+      p1.RGBA.g=rgb.g;
+      p1.RGBA.b=rgb.b;
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_ErrorType conv_err = NaClO_ConvertedE(I1, mode);
+  NaClO_FreeImage(&I22.result);
+  return conv_err;
+}
+NaClO_ImageResult NaClO_HueSaturation(const NaClO_Image *I1, const NaClO_Image *I2) {
+  __NaClO__2(NaClO_SetHueSaturation);
+}
 #ifdef __cplusplus
 }
 #endif
