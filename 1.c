@@ -517,7 +517,6 @@ int main() {
     // NaClO_FreeImage(&src.result);
   }
 
-
   {
     printf("DrawCircle\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
@@ -540,15 +539,40 @@ int main() {
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_PixelType pt;
     memset(&pt, 1, sizeof(pt));
-    printError(NaClO_DrawLine(&src.result,0,0,300,300,pt,8));
+    printError(NaClO_DrawLine(&src.result, 0, 0, 300, 300, pt, 8));
     NaClO_SaveAndFree(&src.result, "line.png");
   }
   {
     printf("Blend\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
-    NaClO_BlendedImage(&src.result, &src2.result, 0.5);
+    NaClO_Blended(&src.result, &src2.result, 0.5);
     NaClO_SaveAndFree(&src.result, "blended.png");
+    NaClO_SaveAndFree(&src2.result, "blended.png");
+  }
+  {
+    printf("Dissolve\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_Dissolved(&src.result, &src2.result, 0.5);
+    NaClO_SaveAndFree(&src.result, "dissolved.png");
+    NaClO_FreeImage(&src2.result);
+  }
+  {
+    printf("lighten\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_Lightened(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, "lighten.png");
+    NaClO_FreeImage(&src2.result);
+  }
+  {
+    printf("darken\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_Darkened(&src.result, &src2.result);
+    NaClO_SaveAndFree(&src.result, "darken.png");
+    NaClO_FreeImage(&src2.result);
   }
   //   {
   //       printf("Perspective\n");

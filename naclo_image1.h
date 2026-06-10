@@ -3734,8 +3734,37 @@ NaClO_ErrorType NaClO_Reversed(NaClO_Image *data) {
   }
   for (NaClO_uint x = 0; x < data->width; ++x) {
     for (NaClO_uint y = 0; y < data->height; ++y) {
+      NaClO_PixelType p = *NaClO_Pixel(data, x, y);
+      switch (data->mode) {
+
+      case NaClO_RGB:
+        p.RGB.r = 255 - p.RGB.r;
+        p.RGB.g = 255 - p.RGB.g;
+        p.RGB.b = 255 - p.RGB.b;
+        break;
+      case NaClO_RGBA:
+        p.RGBA.r = 255 - p.RGBA.r;
+        p.RGBA.g = 255 - p.RGBA.g;
+        p.RGBA.b = 255 - p.RGBA.b;
+        // p.RGBA.a = 255 - p.RGBA.a;
+        break;
+      case NaClO_L:
+        p.L = 1 - p.L;
+      case NaClO_1:
+        p.value = not p.value;
+      }
     }
   }
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_ReverseImage(NaClO_Image *data) {
+
+  NaClO_ImageResult T = NaClO_CopyImage(data);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Reversed(&T.result);
+  return T;
 }
 
 static NaClO_float __naclo__min(NaClO_float i1, NaClO_float i2) {
@@ -3746,8 +3775,8 @@ static NaClO_float __naclo__max(NaClO_float i1, NaClO_float i2) {
 }
 // NaClO_ErrorType
 
-NaClO_ErrorType NaClO_BlendedImage(NaClO_Image *I1, NaClO_Image *I2,
-                                 NaClO_float ratio) {
+NaClO_ErrorType NaClO_Blended(NaClO_Image *I1, NaClO_Image *I2,
+                              NaClO_float ratio) {
   if (I1 == NULL or I2 == NULL) {
     return NACLO_NULL_POINTER;
   }
@@ -3801,6 +3830,155 @@ NaClO_ErrorType NaClO_BlendedImage(NaClO_Image *I1, NaClO_Image *I2,
   }
   NaClO_FreeImage(&I22.result);
   return NACLO_OK;
+}
+
+NaClO_ImageResult NaClO_Blend(NaClO_Image *I1, NaClO_Image *I2,
+                              NaClO_float ratio) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Blended(&T.result, I2, ratio);
+  return T;
+}
+NaClO_ErrorType NaClO_Dissolved(NaClO_Image *I1, NaClO_Image *I2,
+                                NaClO_float ratio) {
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  if (ratio > 1 or ratio < 0) {
+    return NACLO_OUT_OF_BOUNDS;
+  }
+  NaClO_ImageResult I22 = NaClO_ConvertE(I2, I1->mode);
+  if (I22.Error != NACLO_OK) {
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    return t;
+  }
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_float rand01 = (NaClO_float)rand() / RAND_MAX;
+      if (rand01 >= ratio) {
+        *NaClO_Pixel(I1, x, y) = *NaClO_Pixel(&I22.result, x, y);
+      }
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Dissolve(NaClO_Image *I1, NaClO_Image *I2,
+                                 NaClO_float ratio) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Dissolved(&T.result, I2, ratio);
+  return T;
+}
+
+#define __naclo__max(a, b) (a) > (b) ? a : b
+#define __naclo__min(a, b) (a) > (b) ? b : a
+NaClO_ErrorType NaClO_Lightened(NaClO_Image *I1, NaClO_Image *I2) {
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ImageResult I22 = NaClO_ConvertE(I2, I1->mode);
+  if (I22.Error != NACLO_OK) {
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    return t;
+  }
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = __naclo__max(p1.RGB.r, p2.RGB.r);
+        p1.RGB.g = __naclo__max(p1.RGB.g, p2.RGB.g);
+        p1.RGB.b = __naclo__max(p1.RGB.b, p2.RGB.b);
+
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = __naclo__max(p1.RGBA.r, p2.RGBA.r);
+        p1.RGBA.g = __naclo__max(p1.RGBA.g, p2.RGBA.g);
+        p1.RGBA.b = __naclo__max(p1.RGBA.b, p2.RGBA.b);
+        p1.RGBA.a = __naclo__max(p1.RGBA.a, p2.RGBA.a);
+        break;
+      case NaClO_L:
+        p1.L = __naclo__max(p1.L, p2.L);
+        break;
+      case NaClO_1:
+        p1.value = __naclo__max(p1.value, p2.value);
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Lighten(NaClO_Image *I1, NaClO_Image *I2) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Lightened(&T.result, I2);
+  return T;
+}
+NaClO_ErrorType NaClO_Darkened(NaClO_Image *I1, NaClO_Image *I2) {
+  if (I1 == NULL or I2 == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ImageResult I22 = NaClO_ConvertE(I2, I1->mode);
+  if (I22.Error != NACLO_OK) {
+    return I22.Error;
+  }
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);
+  if (t != NACLO_OK) {
+    return t;
+  }
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = __naclo__min(p1.RGB.r, p2.RGB.r);
+        p1.RGB.g = __naclo__min(p1.RGB.g, p2.RGB.g);
+        p1.RGB.b = __naclo__min(p1.RGB.b, p2.RGB.b);
+
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = __naclo__min(p1.RGBA.r, p2.RGBA.r);
+        p1.RGBA.g = __naclo__min(p1.RGBA.g, p2.RGBA.g);
+        p1.RGBA.b = __naclo__min(p1.RGBA.b, p2.RGBA.b);
+        p1.RGBA.a = __naclo__min(p1.RGBA.a, p2.RGBA.a);
+        break;
+      case NaClO_L:
+        p1.L = __naclo__min(p1.L, p2.L);
+        break;
+      case NaClO_1:
+        p1.value = __naclo__min(p1.value, p2.value);
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_Darken(NaClO_Image *I1, NaClO_Image *I2) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_Darkened(&T.result, I2);
+  return T;
 }
 
 #ifdef __cplusplus
