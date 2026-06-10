@@ -700,7 +700,7 @@ int main() {
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
   }
-    {
+  {
     const char *f = "subtract.png";
     printf("%s\n", f);
     NaClO_ImageResult src = NaClO_Load("color.png");
@@ -709,7 +709,7 @@ int main() {
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
   }
-      {
+  {
     const char *f = "divide.png";
     printf("%s\n", f);
     NaClO_ImageResult src = NaClO_Load("color.png");
