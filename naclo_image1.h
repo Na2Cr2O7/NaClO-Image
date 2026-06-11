@@ -311,6 +311,11 @@ NaClO_ErrorType NaClO_SetRoberts(NaClO_Image *data);
 NaClO_ImageResult NaClO_Prewitt(const NaClO_Image *data);
 NaClO_ErrorType NaClO_SetPrewitt(NaClO_Image *data);
 
+NaClO_ImageResult NaClO_Canny(const NaClO_Image *data, NaClO_float lowThreshold,
+                             NaClO_float highThreshold);
+NaClO_ErrorType NaClO_SetCanny(NaClO_Image *data, NaClO_float lowThreshold,
+                               NaClO_float highThreshold);
+
 NaClO_ImageResult NaClO_AvgBlur(const NaClO_Image *data, NaClO_uint strength);
 NaClO_ErrorType NaClO_AvgBlurred(NaClO_Image *data, NaClO_uint strength);
 
@@ -3154,6 +3159,260 @@ NaClO_ErrorType NaClO_SetPrewitt(NaClO_Image *data) {
   return NACLO_OK;
 }
 
+NaClO_ImageResult NaClO_Canny(const NaClO_Image *data, NaClO_float lowThreshold,
+                             NaClO_float highThreshold) {
+  __NaClO__makeResult(T);
+  if (data == NULL) {
+    __NaClO__makeError(T, NACLO_NULL_POINTER);
+  }
+
+  // Step 1: Convert to grayscale if needed
+  NaClO_Image grayImage;
+  bool grayImageOwnsData = false;
+  if (data->mode != NaClO_L) {
+    NaClO_ImageResult grayResult = NaClO_Convert(data, "l");
+    if (grayResult.Error != NACLO_OK) {
+      __NaClO__makeError(T, grayResult.Error);
+    }
+    grayImage = grayResult.result;
+    grayImageOwnsData = true;
+  } else {
+    grayImage = *data;
+  }
+
+  // Step 2: Gaussian Blur (simple 3x3 kernel for L mode)
+  // Note: NaClO_GaussianBlur has a bug for L mode, so we do our own blur
+  NaClO_uint width = data->width;
+  NaClO_uint height = data->height;
+
+  // 3x3 Gaussian kernel (sigma ≈ 1)
+  NaClO_float gaussianKernel[3][3] = {
+    {0.0778f, 0.1233f, 0.0778f},
+    {0.1233f, 0.1953f, 0.1233f},
+    {0.0778f, 0.1233f, 0.0778f}
+  };
+
+  NaClO_float *blurred = (NaClO_float *)NaClO_CALLOC(width * height, sizeof(NaClO_float));
+  if (blurred == NULL) {
+    if (grayImageOwnsData) NaClO_FreeImage(&grayImage);
+    __NaClO__makeError(T, NACLO_MEMORY_ALLOCATION_FAILED);
+  }
+
+  for (NaClO_uint x = 1; x < width - 1; ++x) {
+    for (NaClO_uint y = 1; y < height - 1; ++y) {
+      NaClO_float sum = 0.0f;
+      for (int kx = -1; kx <= 1; ++kx) {
+        for (int ky = -1; ky <= 1; ++ky) {
+          NaClO_float pixelVal = NaClO_Pixel(&grayImage, x + kx, y + ky)->L;
+          sum += pixelVal * gaussianKernel[kx + 1][ky + 1];
+        }
+      }
+      blurred[x + y * width] = sum;
+    }
+  }
+
+  if (grayImageOwnsData) NaClO_FreeImage(&grayImage);
+
+  // Step 3: Sobel Operator - compute gradients directly on blurred data
+  NaClO_float *gradX = (NaClO_float *)NaClO_CALLOC(width * height, sizeof(NaClO_float));
+  NaClO_float *gradY = (NaClO_float *)NaClO_CALLOC(width * height, sizeof(NaClO_float));
+
+  if (gradX == NULL || gradY == NULL) {
+    NaClO_FREE(blurred);
+    NaClO_FREE(gradX);
+    NaClO_FREE(gradY);
+    __NaClO__makeError(T, NACLO_MEMORY_ALLOCATION_FAILED);
+  }
+
+  // Sobel kernels
+  // Gx = [-1  0  1]    Gy = [-1 -2 -1]
+  //      [-2  0  2]         [ 0  0  0]
+  //      [-1  0  1]         [ 1  2  1]
+  for (NaClO_uint x = 1; x < width - 1; ++x) {
+    for (NaClO_uint y = 1; y < height - 1; ++y) {
+      NaClO_float tl = blurred[(x - 1) + (y - 1) * width];
+      NaClO_float tm = blurred[x + (y - 1) * width];
+      NaClO_float tr = blurred[(x + 1) + (y - 1) * width];
+      NaClO_float ml = blurred[(x - 1) + y * width];
+      NaClO_float mr = blurred[(x + 1) + y * width];
+      NaClO_float bl = blurred[(x - 1) + (y + 1) * width];
+      NaClO_float bm = blurred[x + (y + 1) * width];
+      NaClO_float br = blurred[(x + 1) + (y + 1) * width];
+
+      gradX[x + y * width] = -tl + tr - 2 * ml + 2 * mr - bl + br;
+      gradY[x + y * width] = -tl - 2 * tm - tr + bl + 2 * bm + br;
+    }
+  }
+
+  // Allocate gradient magnitude and direction arrays
+  NaClO_float *magnitude = (NaClO_float *)NaClO_CALLOC(width * height, sizeof(NaClO_float));
+  NaClO_float *direction = (NaClO_float *)NaClO_CALLOC(width * height, sizeof(NaClO_float));
+
+  if (magnitude == NULL || direction == NULL) {
+    NaClO_FREE(blurred);
+    NaClO_FREE(gradX);
+    NaClO_FREE(gradY);
+    NaClO_FREE(magnitude);
+    NaClO_FREE(direction);
+    __NaClO__makeError(T, NACLO_MEMORY_ALLOCATION_FAILED);
+  }
+
+  // Compute gradient magnitude and direction
+  for (NaClO_uint x = 1; x < width - 1; ++x) {
+    for (NaClO_uint y = 1; y < height - 1; ++y) {
+      NaClO_float gx = gradX[x + y * width];
+      NaClO_float gy = gradY[x + y * width];
+      NaClO_float mag = sqrtf(gx * gx + gy * gy);
+      NaClO_float dir = atan2f(gy, gx);
+
+      magnitude[x + y * width] = mag;
+      direction[x + y * width] = dir;
+    }
+  }
+
+  NaClO_FREE(gradX);
+  NaClO_FREE(gradY);
+
+  // Step 4: Non-Maximum Suppression
+  NaClO_float *nms = (NaClO_float *)NaClO_CALLOC(width * height, sizeof(NaClO_float));
+  if (nms == NULL) {
+    NaClO_FREE(blurred);
+    NaClO_FREE(magnitude);
+    NaClO_FREE(direction);
+    __NaClO__makeError(T, NACLO_MEMORY_ALLOCATION_FAILED);
+  }
+
+  for (NaClO_uint x = 1; x < width - 1; ++x) {
+    for (NaClO_uint y = 1; y < height - 1; ++y) {
+      NaClO_float ang = direction[x + y * width];
+      NaClO_float mag = magnitude[x + y * width];
+
+      // Normalize angle to [0, pi]
+      if (ang < 0) ang += NaClO_PI;
+
+      NaClO_float m1, m2;
+
+      // 0: edge is horizontal, check neighbors above and below
+      if (ang < NaClO_PI / 8 || ang >= 7 * NaClO_PI / 8) {
+        m1 = magnitude[x + (y - 1) * width];
+        m2 = magnitude[x + (y + 1) * width];
+      }
+      // 1: edge is diagonal (45 degrees)
+      else if (ang >= NaClO_PI / 8 && ang < 3 * NaClO_PI / 8) {
+        m1 = magnitude[(x - 1) + (y - 1) * width];
+        m2 = magnitude[(x + 1) + (y + 1) * width];
+      }
+      // 2: edge is vertical, check neighbors left and right
+      else if (ang >= 3 * NaClO_PI / 8 && ang < 5 * NaClO_PI / 8) {
+        m1 = magnitude[(x - 1) + y * width];
+        m2 = magnitude[(x + 1) + y * width];
+      }
+      // 3: edge is diagonal (135 degrees)
+      else {
+        m1 = magnitude[(x - 1) + (y + 1) * width];
+        m2 = magnitude[(x + 1) + (y - 1) * width];
+      }
+
+      if (mag >= m1 && mag >= m2) {
+        nms[x + y * width] = mag;
+      } else {
+        nms[x + y * width] = 0;
+      }
+    }
+  }
+
+  // Step 5: Double Threshold and Edge Tracking by Hysteresis
+  T = NaClO_NewImage(width, height, NaClO_L, (NaClO_PixelType){.L = 0});
+  if (T.Error != NACLO_OK) {
+    NaClO_FREE(blurred);
+    NaClO_FREE(magnitude);
+    NaClO_FREE(direction);
+    NaClO_FREE(nms);
+    return T;
+  }
+
+  NaClO_uint *strongEdges = (NaClO_uint *)NaClO_CALLOC(width * height, sizeof(NaClO_uint));
+  NaClO_uint *weakEdges = (NaClO_uint *)NaClO_CALLOC(width * height, sizeof(NaClO_uint));
+
+  if (strongEdges == NULL || weakEdges == NULL) {
+    NaClO_FREE(blurred);
+    NaClO_FREE(magnitude);
+    NaClO_FREE(direction);
+    NaClO_FREE(nms);
+    NaClO_FREE(strongEdges);
+    NaClO_FREE(weakEdges);
+    __NaClO__makeError(T, NACLO_MEMORY_ALLOCATION_FAILED);
+  }
+
+  for (NaClO_uint x = 0; x < width; ++x) {
+    for (NaClO_uint y = 0; y < height; ++y) {
+      NaClO_float val = nms[x + y * width];
+      if (val >= highThreshold) {
+        strongEdges[x + y * width] = 1;
+        weakEdges[x + y * width] = 0;
+      } else if (val >= lowThreshold) {
+        strongEdges[x + y * width] = 0;
+        weakEdges[x + y * width] = 1;
+      } else {
+        strongEdges[x + y * width] = 0;
+        weakEdges[x + y * width] = 0;
+      }
+    }
+  }
+
+  // Edge tracking by hysteresis
+  for (NaClO_uint x = 1; x < width - 1; ++x) {
+    for (NaClO_uint y = 1; y < height - 1; ++y) {
+      if (weakEdges[x + y * width]) {
+        bool hasStrongNeighbor = false;
+        for (int dx = -1; dx <= 1; ++dx) {
+          for (int dy = -1; dy <= 1; ++dy) {
+            if (strongEdges[(x + dx) + (y + dy) * width]) {
+              hasStrongNeighbor = true;
+              break;
+            }
+          }
+          if (hasStrongNeighbor) break;
+        }
+        if (hasStrongNeighbor) {
+          strongEdges[x + y * width] = 1;
+        }
+      }
+    }
+  }
+
+  // Fill the result image
+  for (NaClO_uint x = 0; x < width; ++x) {
+    for (NaClO_uint y = 0; y < height; ++y) {
+      NaClO_PixelType p;
+      p.L = strongEdges[x + y * width] ? 1.0f : 0.0f;
+      *NaClO_Pixel(&T.result, x, y) = p;
+    }
+  }
+
+  // Cleanup
+  NaClO_FREE(blurred);
+  NaClO_FREE(magnitude);
+  NaClO_FREE(direction);
+  NaClO_FREE(nms);
+  NaClO_FREE(strongEdges);
+  NaClO_FREE(weakEdges);
+
+  T.Error = NACLO_OK;
+  return T;
+}
+
+NaClO_ErrorType NaClO_SetCanny(NaClO_Image *data, NaClO_float lowThreshold,
+                               NaClO_float highThreshold) {
+  NaClO_ImageResult T = NaClO_Canny(data, lowThreshold, highThreshold);
+  if (T.Error != NACLO_OK) {
+    return T.Error;
+  }
+  NaClO_FreeImage(data);
+  *data = T.result;
+  return NACLO_OK;
+}
+
 NaClO_ImageResult NaClO_AvgBlur(const NaClO_Image *data, NaClO_uint strength) {
   NaClO_uint kernel = 2 * strength + 1;
   NaClO_ImageResult T = NaClO_CopyImage(data);
@@ -3397,7 +3656,7 @@ NaClO_ImageResult NaClO_GaussianBlur(const NaClO_Image *data, NaClO_uint strengt
             b += (NaClO_float)(pt.RGBA.b) * factor;
             break;
           case NaClO_L:
-            L += floorf(pt.L * factor);
+            L += pt.L * factor;
             break;
           case NaClO_1:
             value += pt.value * factor;

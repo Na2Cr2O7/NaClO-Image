@@ -751,7 +751,7 @@ int main() {
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
   }
-   {
+  {
     const char *f = "Luminosity.png";
     printf("%s\n", f);
     NaClO_ImageResult src = NaClO_Load("color.png");
@@ -759,6 +759,14 @@ int main() {
     NaClO_SetLuminosity(&src.result, &src2.result);
     NaClO_SaveAndFree(&src.result, f);
     NaClO_FreeImage(&src2.result);
+  }
+  {
+    printf("Canny\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_SetCanny(&src.result,0.1f,0.3f));
+    NaClO_SaveAndFree(&src.result, "canny.png");
   }
   //   {
   //       printf("Perspective\n");
