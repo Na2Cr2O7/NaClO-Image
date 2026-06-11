@@ -84,6 +84,48 @@ int main() {
   printf("%u,%f,%f\n", hsv.hue, hsv.saturation * 100, hsv.value * 100);
   rgb = NaClO_GetRGB(hsv);
   printf("%d,%d,%d\n", (int)rgb.r, (int)rgb.g, (int)rgb.b);
+  {
+    printf("Resize\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    NaClO_ImageResult lp = NaClO_Resize(&src.result, 100, 400);
+    printError(lp.Error);
+    NaClO_SaveAndFree(&lp.result, "Resize.png");
+    NaClO_FreeImage(&src.result);
+  }
+  {
+    printf("ResizeL\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    printError(NaClO_Converted(&src.result, "L"));
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    NaClO_ImageResult lp = NaClO_Resize(&src.result, 100, 400);
+    printError(lp.Error);
+    NaClO_SaveAndFree(&lp.result, "WResize.png");
+    NaClO_FreeImage(&src.result);
+  }
+  {
+    printf("Resize1\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    printError(NaClO_Converted(&src.result, "1"));
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    NaClO_ImageResult lp = NaClO_Resize(&src.result, 100, 400);
+    printError(lp.Error);
+    NaClO_SaveAndFree(&lp.result, "1Resize.png");
+    NaClO_FreeImage(&src.result);
+  }
+
+    {
+    printf("ResizeRGBA\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    printError(NaClO_Converted(&src.result, "rgba"));
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    NaClO_ImageResult lp = NaClO_Resize(&src.result, 100, 400);
+    printError(lp.Error);
+    NaClO_SaveAndFree(&lp.result, "rgbaResize.png");
+    NaClO_FreeImage(&src.result);
+  
+  }
+  // return 0;;
 
   // printf("11\n");
 
@@ -174,21 +216,6 @@ int main() {
     printError(err);
     NaClO_SaveAndFree(&src.result, "flipped.png");
   }
-  // {
-  //   NaClO_PixelType p;
-  //   p.RGBA.r = 0;
-  //   p.RGBA.g = 114;
-  //   p.RGBA.b = 42;
-  //   printf("pasted\n");
-  //   NaClO_ImageResult src = NaClO_Load("color.png");
-  //   NaClO_ImageResult newImage = NaClO_NewImage(5000, 5000, NaClO_RGB, p);
-
-  //   NaClO_ErrorType err =
-  //       NaClO_Pasted(&newImage.result, &src.result, 1000, 1000);
-  //   printError(err);
-  //   NaClO_SaveAndFree(&newImage.result, "pasted.png");
-  //   NaClO_FreeImage(&src.result);
-  // }
   {
     printf("Cropped\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
@@ -205,67 +232,67 @@ int main() {
     NaClO_SaveAndFree(&Rotate.result, "Rotate1.png");
   }
 
-  {
-    NaClO_MatrixResult M1R = NaClO_NewMatrix(3, 3);
-    NaClO_MatrixResult M2R = NaClO_NewMatrix(3, 3);
-    NaClO_Matrix M1 = NaClO_Unwrap(M1R);
-    NaClO_Matrix M2 = NaClO_Unwrap(M2R);
-    *NaClO_MatrixElement(&M1, 0, 0) = 3;
-    *NaClO_MatrixElement(&M1, 0, 1) = 4;
-    *NaClO_MatrixElement(&M1, 0, 2) = 5;
+  // {
+  //   NaClO_MatrixResult M1R = NaClO_NewMatrix(3, 3);
+  //   NaClO_MatrixResult M2R = NaClO_NewMatrix(3, 3);
+  //   NaClO_Matrix M1 = NaClO_Unwrap(M1R);
+  //   NaClO_Matrix M2 = NaClO_Unwrap(M2R);
+  //   *NaClO_MatrixElement(&M1, 0, 0) = 3;
+  //   *NaClO_MatrixElement(&M1, 0, 1) = 4;
+  //   *NaClO_MatrixElement(&M1, 0, 2) = 5;
 
-    *NaClO_MatrixElement(&M1, 1, 0) = 6;
-    *NaClO_MatrixElement(&M1, 1, 1) = 7;
-    *NaClO_MatrixElement(&M1, 1, 2) = 8;
+  //   *NaClO_MatrixElement(&M1, 1, 0) = 6;
+  //   *NaClO_MatrixElement(&M1, 1, 1) = 7;
+  //   *NaClO_MatrixElement(&M1, 1, 2) = 8;
 
-    *NaClO_MatrixElement(&M1, 2, 0) = 8;
-    *NaClO_MatrixElement(&M1, 2, 1) = 9;
-    *NaClO_MatrixElement(&M1, 2, 2) = 1;
+  //   *NaClO_MatrixElement(&M1, 2, 0) = 8;
+  //   *NaClO_MatrixElement(&M1, 2, 1) = 9;
+  //   *NaClO_MatrixElement(&M1, 2, 2) = 1;
 
-    //
+  //   //
 
-    *NaClO_MatrixElement(&M2, 0, 0) = 7;
-    *NaClO_MatrixElement(&M2, 0, 1) = 8;
-    *NaClO_MatrixElement(&M2, 0, 2) = 9;
+  //   *NaClO_MatrixElement(&M2, 0, 0) = 7;
+  //   *NaClO_MatrixElement(&M2, 0, 1) = 8;
+  //   *NaClO_MatrixElement(&M2, 0, 2) = 9;
 
-    *NaClO_MatrixElement(&M2, 1, 0) = 0;
-    *NaClO_MatrixElement(&M2, 1, 1) = 8;
-    *NaClO_MatrixElement(&M2, 1, 2) = 9;
+  //   *NaClO_MatrixElement(&M2, 1, 0) = 0;
+  //   *NaClO_MatrixElement(&M2, 1, 1) = 8;
+  //   *NaClO_MatrixElement(&M2, 1, 2) = 9;
 
-    *NaClO_MatrixElement(&M2, 2, 0) = 5;
-    *NaClO_MatrixElement(&M2, 2, 1) = 6;
-    *NaClO_MatrixElement(&M2, 2, 2) = 9;
+  //   *NaClO_MatrixElement(&M2, 2, 0) = 5;
+  //   *NaClO_MatrixElement(&M2, 2, 1) = 6;
+  //   *NaClO_MatrixElement(&M2, 2, 2) = 9;
 
-    printf("M1\n");
-    PrintMatrix(M1);
+  //   printf("M1\n");
+  //   PrintMatrix(M1);
 
-    printf("M2\n");
+  //   printf("M2\n");
 
-    PrintMatrix(M2);
+  //   PrintMatrix(M2);
 
-    printf("Matrix multiply\n");
-    NaClO_MatrixResult M3R = NaClO_MatrixMultiply(&M1, &M2);
-    printError(M3R.Error);
-    NaClO_Matrix M3 = NaClO_Unwrap(M3R);
+  //   printf("Matrix multiply\n");
+  //   NaClO_MatrixResult M3R = NaClO_MatrixMultiply(&M1, &M2);
+  //   printError(M3R.Error);
+  //   NaClO_Matrix M3 = NaClO_Unwrap(M3R);
 
-    for (uint8_t y = 0; y < M3.width; ++y) {
-      for (uint8_t x = 0; x < M3.height; ++x) {
-        printf("%f ", *NaClO_MatrixElement(&M3, x, y));
-      }
-      printf("\n");
-    }
+  //   for (uint8_t y = 0; y < M3.width; ++y) {
+  //     for (uint8_t x = 0; x < M3.height; ++x) {
+  //       printf("%f ", *NaClO_MatrixElement(&M3, x, y));
+  //     }
+  //     printf("\n");
+  //   }
 
-    printf("Matrix Inversion\n");
-    NaClO_MatrixResult M4R = NaClO_MatrixInversion(&M3);
-    printError(M4R.Error);
-    NaClO_Matrix M4 = NaClO_Unwrap(M4R);
+  //   printf("Matrix Inversion\n");
+  //   NaClO_MatrixResult M4R = NaClO_MatrixInversion(&M3);
+  //   printError(M4R.Error);
+  //   NaClO_Matrix M4 = NaClO_Unwrap(M4R);
 
-    PrintMatrix(M4);
-    NaClO_FreeMatrix(&M1);
-    NaClO_FreeMatrix(&M2);
-    NaClO_FreeMatrix(&M3);
-    NaClO_FreeMatrix(&M4);
-  }
+  //   PrintMatrix(M4);
+  //   NaClO_FreeMatrix(&M1);
+  //   NaClO_FreeMatrix(&M2);
+  //   NaClO_FreeMatrix(&M3);
+  //   NaClO_FreeMatrix(&M4);
+  // }
 
   // {
   //   printf("Expand\n");
@@ -305,39 +332,6 @@ int main() {
     NaClO_ImageResult src = NaClO_Load("color.png");
     printError(NaClO_SetGamma(&src.result, 0.5f));
     NaClO_SaveAndFree(&src.result, "gamma.png");
-  }
-  {
-    printf("Conv\n");
-    NaClO_ImageResult src = NaClO_Load("color.png");
-    if (src.Error != NACLO_OK) {
-      printf("Failed to load image\n");
-      return -1;
-    }
-    // printError(NaClO_SetGamma(&src.result, 0.5f));
-    NaClO_MatrixResult mResult = NaClO_NewMatrix(3, 3);
-    if (mResult.Error != NACLO_OK) {
-      printf("Failed to create matrix\n");
-      NaClO_FreeImage(&src.result);
-      return -1;
-    }
-    NaClO_Matrix m = mResult.result;
-    // *NaClO_MatrixElement(&m, 0, 0)=0;
-    *NaClO_MatrixElement1(&m, 2, 1) = -1;
-    *NaClO_MatrixElement1(&m, 2, 1) = -1;
-    *NaClO_MatrixElement1(&m, 2, 2) = 5;
-    *NaClO_MatrixElement1(&m, 2, 3) = -1;
-    *NaClO_MatrixElement1(&m, 3, 2) = -1;
-
-    NaClO_ErrorType convError = NaClO_Convoluted(&src.result, m, 1, 0);
-    printError(convError);
-
-    NaClO_FreeMatrix(&m);
-
-    if (convError == NACLO_OK) {
-      NaClO_SaveAndFree(&src.result, "Conv.png");
-    } else {
-      NaClO_FreeImage(&src.result);
-    }
   }
   {
     printf("Laplace\n");
@@ -765,9 +759,437 @@ int main() {
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_PixelType pt;
     memset(&pt, 1, sizeof(pt));
-    printError(NaClO_SetCanny(&src.result,0.1f,0.3f));
+    printError(NaClO_SetCanny(&src.result, 0.1f, 0.3f));
     NaClO_SaveAndFree(&src.result, "canny.png");
   }
+  {
+    printf("BW\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_Converted(&src.result, "L"));
+    NaClO_Save(&src.result, "bw.png");
+
+    printf("Gamma\n");
+    NaClO_ImageResult r1 = NaClO_Gamma(&src.result, 0.5f);
+    NaClO_SaveAndFree(&r1.result, "./W/gamma.png");
+
+    printf("Scale\n");
+    r1 = NaClO_Resize(&src.result, 500, 500);
+    NaClO_Save(&src.result, "./W/scaled.png");
+
+    printf("Laplace\n");
+
+    r1 = NaClO_Laplace(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Laplace.png");
+    printf("Sobel\n");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    r1 = NaClO_Sobel(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/sobel.png");
+    printf("Roberts\n");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    r1 = NaClO_Roberts(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Roberts.png");
+    printf("Prewitt\n");
+    r1 = NaClO_Prewitt(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Prewitt.png");
+    printf("AvgBlur\n");
+    r1 = NaClO_AvgBlur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/AvgBlur.png");
+
+    printf("MedianBlur\n");
+    r1 = NaClO_MedianBlur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/MedianBlur.png");
+
+    printf("GaussianBlur\n");
+    r1 = NaClO_GaussianBlur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/GaussianBlur.png");
+
+    printf("Blur\n");
+    r1 = NaClO_Blur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Blur.png");
+
+    printf("HSV\n");
+    r1 = NaClO_HueSaturationValue(&src.result, 1, 2, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/HueSaturationValue.png");
+
+    printf("FlipAt\n");
+    r1 = NaClO_FlipAt(&src.result, 1000, NACLO_FLIP_X);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/FlipAt.png");
+
+    printf("HistEq\n");
+    r1 = NaClO_HistogramEqualization(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/HistEq.png");
+
+    printf("Sharpen\n");
+    r1 = NaClO_Sharpen(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Sharpen.png");
+    printf("Luminance\n");
+    printf("%f\n", NaClO_Luminance2(NaClO_Pixel(&src.result, 20, 20)->RGB));
+    // NaClO_FreeImage(&src.result);
+
+    printf("Blend\n");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    printError(src2.Error);
+    r1 = NaClO_Blend(&src.result, &src2.result, 0.5);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/blended.png");
+
+    printf("Dissolve\n");
+    r1 = NaClO_Dissolve(&src.result, &src2.result, 0.5);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Dissolved.png");
+
+    printf("lighten\n");
+    r1 = NaClO_Lighten(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/lighten.png");
+
+    printf("darken\n");
+    r1 = NaClO_Darken(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/darken.png");
+
+    printf("multiply\n");
+    r1 = NaClO_Multiply(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/multiply.png");
+
+    printf("burn\n");
+    r1 = NaClO_Burn(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/burn.png");
+
+    printf("min\n");
+    r1 = NaClO_Min(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/min.png");
+
+    printf("screen\n");
+    r1 = NaClO_Screen(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/screen.png");
+
+    printf("colorDodge\n");
+    r1 = NaClO_ColorDodge(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/colorDodge.png");
+
+    printf("linearDodge\n");
+    r1 = NaClO_LinearDodge(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/linearDodge.png");
+
+    printf("overlay\n");
+    r1 = NaClO_Overlay(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Overlay.png");
+
+    printf("SoftLight\n");
+    r1 = NaClO_SoftLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/SoftLight.png");
+
+    printf("HardLight\n");
+    r1 = NaClO_HardLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/HardLight.png");
+
+    printf("VividLight\n");
+    r1 = NaClO_VividLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/VividLight.png");
+
+    printf("LinearLight\n");
+    r1 = NaClO_LinearLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/LinearLight.png");
+
+    printf("PinLight\n");
+    r1 = NaClO_PinLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/PinLight.png");
+
+    printf("hardMix\n");
+    r1 = NaClO_HardMix(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/HardMix.png");
+
+    printf("difference\n");
+    r1 = NaClO_Difference(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/difference.png");
+
+    printf("exclusion\n");
+    r1 = NaClO_Exclusion(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/exclusion.png");
+
+    printf("subtract\n");
+    r1 = NaClO_Subtract(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/subtract.png");
+
+    printf("divide\n");
+    r1 = NaClO_Divide(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/divide.png");
+
+    printf("hue\n");
+    r1 = NaClO_Hue(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/hue.png");
+
+    printf("saturation\n");
+    r1 = NaClO_Saturation(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/saturation.png");
+
+    printf("huesaturation\n");
+    r1 = NaClO_HueSaturation(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/huesaturation.png");
+
+    printf("Luminosity\n");
+    r1 = NaClO_Luminosity(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Luminosity.png");
+
+    printf("Canny\n");
+    r1 = NaClO_Canny(&src.result, 0.1f, 0.3f);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./W/Canny.png");
+
+    NaClO_FreeImage(&src.result);
+    NaClO_FreeImage(&src2.result);
+  }
+
+  {
+    printf("1\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_Converted(&src.result, "1"));
+    NaClO_Save(&src.result, "1.png");
+
+    printf("Gamma\n");
+    NaClO_ImageResult r1 = NaClO_Gamma(&src.result, 0.5f);
+    NaClO_SaveAndFree(&r1.result, "./1/gamma.png");
+
+    printf("Scale\n");
+    r1 = NaClO_Resize(&src.result, 500, 500);
+    NaClO_Save(&src.result, "./1/scaled.png");
+
+    printf("Laplace\n");
+
+    r1 = NaClO_Laplace(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Laplace.png");
+    printf("Sobel\n");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    r1 = NaClO_Sobel(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/sobel.png");
+    printf("Roberts\n");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    r1 = NaClO_Roberts(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Roberts.png");
+    printf("Prewitt\n");
+    r1 = NaClO_Prewitt(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Prewitt.png");
+    printf("AvgBlur\n");
+    r1 = NaClO_AvgBlur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/AvgBlur.png");
+
+    printf("MedianBlur\n");
+    r1 = NaClO_MedianBlur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/MedianBlur.png");
+
+    printf("GaussianBlur\n");
+    r1 = NaClO_GaussianBlur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/GaussianBlur.png");
+
+    printf("Blur\n");
+    r1 = NaClO_Blur(&src.result, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Blur.png");
+
+    printf("HSV\n");
+    r1 = NaClO_HueSaturationValue(&src.result, 1, 2, 1);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/HueSaturationValue.png");
+
+    printf("FlipAt\n");
+    r1 = NaClO_FlipAt(&src.result, 1000, NACLO_FLIP_X);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/FlipAt.png");
+
+    printf("HistEq\n");
+    r1 = NaClO_HistogramEqualization(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/HistEq.png");
+
+    printf("Sharpen\n");
+    r1 = NaClO_Sharpen(&src.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Sharpen.png");
+    printf("Luminance\n");
+    printf("%f\n", NaClO_Luminance2(NaClO_Pixel(&src.result, 20, 20)->RGB));
+    // NaClO_FreeImage(&src.result);
+
+    printf("Blend\n");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    printError(src2.Error);
+    r1 = NaClO_Blend(&src.result, &src2.result, 0.5);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/blended.png");
+
+    printf("Dissolve\n");
+    r1 = NaClO_Dissolve(&src.result, &src2.result, 0.5);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Dissolved.png");
+
+    printf("lighten\n");
+    r1 = NaClO_Lighten(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/lighten.png");
+
+    printf("darken\n");
+    r1 = NaClO_Darken(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/darken.png");
+
+    printf("multiply\n");
+    r1 = NaClO_Multiply(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/multiply.png");
+
+    printf("burn\n");
+    r1 = NaClO_Burn(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/burn.png");
+
+    printf("min\n");
+    r1 = NaClO_Min(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/min.png");
+
+    printf("screen\n");
+    r1 = NaClO_Screen(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/screen.png");
+
+    printf("colorDodge\n");
+    r1 = NaClO_ColorDodge(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/colorDodge.png");
+
+    printf("linearDodge\n");
+    r1 = NaClO_LinearDodge(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/linearDodge.png");
+
+    printf("overlay\n");
+    r1 = NaClO_Overlay(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Overlay.png");
+
+    printf("SoftLight\n");
+    r1 = NaClO_SoftLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/SoftLight.png");
+
+    printf("HardLight\n");
+    r1 = NaClO_HardLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/HardLight.png");
+
+    printf("VividLight\n");
+    r1 = NaClO_VividLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/VividLight.png");
+
+    printf("LinearLight\n");
+    r1 = NaClO_LinearLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/LinearLight.png");
+
+    printf("PinLight\n");
+    r1 = NaClO_PinLight(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/PinLight.png");
+
+    printf("hardMix\n");
+    r1 = NaClO_HardMix(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/HardMix.png");
+
+    printf("difference\n");
+    r1 = NaClO_Difference(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/difference.png");
+
+    printf("exclusion\n");
+    r1 = NaClO_Exclusion(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/exclusion.png");
+
+    printf("subtract\n");
+    r1 = NaClO_Subtract(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/subtract.png");
+
+    printf("divide\n");
+    r1 = NaClO_Divide(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/divide.png");
+
+    printf("hue\n");
+    r1 = NaClO_Hue(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/hue.png");
+
+    printf("saturation\n");
+    r1 = NaClO_Saturation(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/saturation.png");
+
+    printf("huesaturation\n");
+    r1 = NaClO_HueSaturation(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/huesaturation.png");
+
+    printf("Luminosity\n");
+    r1 = NaClO_Luminosity(&src.result, &src2.result);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Luminosity.png");
+
+    printf("Canny\n");
+    r1 = NaClO_Canny(&src.result, 0.1f, 0.3f);
+    printError(r1.Error);
+    NaClO_SaveAndFree(&r1.result, "./1/Canny.png");
+
+    NaClO_FreeImage(&src.result);
+    NaClO_FreeImage(&src2.result);
+  }
+
   //   {
   //       printf("Perspective\n");
   //     NaClO_ImageResult src = NaClO_Load("color.png");
