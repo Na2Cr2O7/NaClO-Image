@@ -4,7 +4,6 @@
  * @brief 适用于C的高易用性图像处理单文件库
  * @brief 可选择替换申请内存、释放内存函数，无符号整数和浮点数类型。
  */
-// #include <cstddef>
 #include <ctype.h>
 #include <iso646.h>
 #include <math.h>
@@ -5568,7 +5567,110 @@ NaClO_ImageResult NaClO_Luminosity(const NaClO_Image *I1,
                                    const NaClO_Image *I2) {
   __NaClO__2(NaClO_SetLuminosity);
 }
+#define __naclo__2imgprol2()                                                   \
+  if (I1 == NULL or I2 == NULL) {                                              \
+    return NACLO_NULL_POINTER;                                                 \
+  }                                                                            \
+  if (I1->mode == NaClO_1) {                                                   \
+    return NACLO_1_IS_NOT_SUPPORTED;                                           \
+  }                                                                            \
+  NaClO_ImageResult I22 = NaClO_ConvertE(I2, I1->mode);                        \
+  NaClO_ImageResult Mask2 = NaClO_Convert(I2, "L");                            \
+  if (I22.Error != NACLO_OK) {                                                 \
+    return I22.Error;                                                          \
+  }                                                                            \
+  NaClO_ErrorType t = NaClO_Resized(&I22.result, I1->width, I1->height);       \
+  NaClO_ErrorType t2 = NaClO_Resized(&Mask2.result, I1->width, I1->height);    \
+  if (t != NACLO_OK) {                                                         \
+    return t;                                                                  \
+  }                                                                            \
+  if (t2 != NACLO_OK) {                                                        \
+    return t2;                                                                 \
+  }
 
+NaClO_ErrorType NaClO_BlendedByMask(NaClO_Image *I1, const NaClO_Image *I2,
+                                    const NaClO_Image *mask) {
+  __naclo__2imgprol2();
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
+      NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
+      NaClO_PixelType p3 = *NaClO_Pixel(&Mask2.result, x, y);
+      NaClO_float ratio = p3.L;
+      switch (I1->mode) {
+      case NaClO_RGB:
+        p1.RGB.r = (NaClO_float)p1.RGB.r * (1 - ratio) +
+                   (NaClO_float)p2.RGB.r * (ratio);
+        p1.RGB.g = (NaClO_float)p1.RGB.g * (1 - ratio) +
+                   (NaClO_float)p2.RGB.g * (ratio);
+        p1.RGB.b = (NaClO_float)p1.RGB.b * (1 - ratio) +
+                   (NaClO_float)p2.RGB.b * (ratio);
+        break;
+      case NaClO_RGBA:
+        p1.RGBA.r = (NaClO_float)p1.RGBA.r * (1 - ratio) +
+                    (NaClO_float)p2.RGBA.r * (ratio);
+        p1.RGBA.g = (NaClO_float)p1.RGBA.g * (1 - ratio) +
+                    (NaClO_float)p2.RGBA.g * (ratio);
+        p1.RGBA.b = (NaClO_float)p1.RGBA.b * (1 - ratio) +
+                    (NaClO_float)p2.RGBA.b * (ratio);
+        p1.RGBA.a = (NaClO_float)p1.RGBA.a * (1 - ratio) +
+                    (NaClO_float)p2.RGBA.a * (ratio);
+        break;
+      case NaClO_L:
+        p1.L = (NaClO_float)p1.L * (1 - ratio) + (NaClO_float)p2.L * (ratio);
+        break;
+      case NaClO_1:
+        p1.value = (NaClO_float)p1.value * (1 - ratio) +
+                               (NaClO_float)p2.value * (ratio) >
+                           0.5
+                       ? true
+                       : false;
+        break;
+      }
+      *NaClO_Pixel(I1, x, y) = p1;
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  NaClO_FreeImage(&Mask2.result);
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_BlendByMask(NaClO_Image *I1, const NaClO_Image *I2,
+                                    const NaClO_Image *mask) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_BlendedByMask(&T.result, I2, mask);
+  return T;
+}
+NaClO_ErrorType NaClO_DissolvedByMask(NaClO_Image *I1, const NaClO_Image *I2,
+                                      const NaClO_Image *mask) {
+  __naclo__2imgprol2();
+
+  for (int x = 0; x < I1->width; ++x) {
+    for (int y = 0; y < I1->height; ++y) {
+      NaClO_float rand01 = (NaClO_float)rand() / RAND_MAX;
+      NaClO_PixelType p3 = *NaClO_Pixel(&Mask2.result, x, y);
+      NaClO_float ratio = p3.L;
+      if (rand01 >= ratio) {
+        *NaClO_Pixel(I1, x, y) = *NaClO_Pixel(&I22.result, x, y);
+      }
+    }
+  }
+  NaClO_FreeImage(&I22.result);
+  NaClO_FreeImage(&Mask2.result);
+
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_DissolveByMask(const NaClO_Image *I1, const NaClO_Image *I2,
+                                 const NaClO_Image *mask) {
+  NaClO_ImageResult T = NaClO_CopyImage(I1);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error = NaClO_DissolvedByMask(&T.result,I2,mask);
+  return T;
+}
 #ifdef __cplusplus
 }
 #endif
