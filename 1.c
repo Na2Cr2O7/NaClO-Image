@@ -103,13 +103,29 @@ int main() {
     printError(NaClO_DrawCircle(&src.result, 100, 100, pt, 40, false, 0));
     NaClO_SaveAndFree(&src.result, "circle.png");
   }
-    {
+  {
     printf("Line\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_PixelType pt;
     memset(&pt, 1, sizeof(pt));
-    printError(NaClO_DrawLine(&src.result, 0, 0, 300, 300, pt, 8));
+    printError(NaClO_DrawLineAA(&src.result, 0, 0, 300, 300, pt, 8));
     NaClO_SaveAndFree(&src.result, "line.png");
+  }
+  {
+    printf("Rect\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_DrawRectangleAA(&src.result, 50, 50, 300, 300, pt, 8, false));
+    NaClO_SaveAndFree(&src.result, "rect1.png");
+  }
+  {
+    printf("Rect\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");  
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_DrawRectangleAA(&src.result, 50, 50, 300, 300, pt, 8, true));
+    NaClO_SaveAndFree(&src.result, "rect2.png");
   }
   return 0;
   NaClO_ColorModeRGB rgb;
@@ -475,7 +491,6 @@ int main() {
     printError(NaClO_Sharpened(&src.result));
     NaClO_SaveAndFree(&src.result, "sharpened.png");
   }
-
 
   {
     printf("Luminance\n");

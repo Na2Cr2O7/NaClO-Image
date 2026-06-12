@@ -399,11 +399,15 @@ NaClO_ErrorType NaClO_DrawCircleAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
 NaClO_ErrorType NaClO_DrawCircle(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                                  NaClO_PixelType color, NaClO_uint radius,
                                  bool filled, NaClO_uint radius2);
-NaClO_ErrorType NaClO_Dot(NaClO_Image *canva, NaClO_int x, NaClO_int y,
-                          NaClO_PixelType color, NaClO_uint radius) ;
-NaClO_ErrorType NaClO_DrawLine(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
-                               NaClO_int x2, NaClO_int y2,
-                               NaClO_PixelType color, NaClO_uint radius) ;
+NaClO_ErrorType NaClO_DotAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
+                            NaClO_PixelType color, NaClO_uint radius);
+NaClO_ErrorType NaClO_DrawLineAA(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
+                                 NaClO_int x2, NaClO_int y2,
+                                 NaClO_PixelType color, NaClO_uint radius);
+NaClO_ErrorType NaClO_DrawRectangleAA(NaClO_Image *canva, NaClO_int x1,
+                                      NaClO_int y1, NaClO_int x2, NaClO_int y2,
+                                      NaClO_PixelType color, NaClO_uint radius,
+                                      bool filled);
 #define NaClO_Burnt(I1, I2) NaClO_Burned(I1, I2)
 NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, const NaClO_Image *I2);
 #define NaClO_Unwrap(r) (assert((r).Error == NACLO_OK), (r).result)
@@ -472,6 +476,12 @@ uint8_t __naclo_get_channel_count(const NaClO_Image *data) {
     break;
   }
   return channel;
+}
+static NaClO_float __naclo__min(NaClO_float i1, NaClO_float i2) {
+  return i1 > i2 ? i2 : i1;
+}
+static NaClO_float __naclo__max(NaClO_float i1, NaClO_float i2) {
+  return i1 > i2 ? i1 : i2;
 }
 NaClO_ErrorType __naclo_make_memory(NaClO_Image *T, int comp) {
 
@@ -1427,14 +1437,7 @@ NaClO_ErrorType NaClO_DrawCircleAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
       NaClO_int dist2 = dx * dx + dy * dy;
       NaClO_float ratio = ((NaClO_float)dist2 / r2);
       ratio = powf(ratio, radius * 2);
-      // if (ratio > 1)
-      //   ratio = 1;
-      // if (ratio < 0)
-      //   ratio = 0;
-      // ratio = sinf((NaClO_PI / 2) * ratio);
       if (filled) {
-        // printf("%f ", ratio);
-
         if (dist2 <= r2) {
           *NaClO_Pixel(canva, (NaClO_uint)nx, (NaClO_uint)ny) =
               NaClO_BlendPixel(color, *NaClO_Pixel(canva, nx, ny), ratio,
@@ -1452,11 +1455,14 @@ NaClO_ErrorType NaClO_DrawCircleAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
   }
   return NACLO_OK;
 }
-NaClO_ErrorType NaClO_Dot(NaClO_Image *canva, NaClO_int x, NaClO_int y,
-                          NaClO_PixelType color, NaClO_uint radius) {
+NaClO_ErrorType NaClO_DotAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
+                            NaClO_PixelType color, NaClO_uint radius) {
   return NaClO_DrawCircleAA(canva, x, y, color, radius, true, 0);
 }
-
+NaClO_ErrorType NaClO_Dot(NaClO_Image *canva, NaClO_int x, NaClO_int y,
+                          NaClO_PixelType color, NaClO_uint radius) {
+  return NaClO_DrawCircle(canva, x, y, color, radius, true, 0);
+}
 NaClO_ErrorType NaClO_DrawLine(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
                                NaClO_int x2, NaClO_int y2,
                                NaClO_PixelType color, NaClO_uint radius) {
@@ -1466,15 +1472,113 @@ NaClO_ErrorType NaClO_DrawLine(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
 
   NaClO_int deltax = x1 - x2;
   NaClO_int deltay = y1 - y2;
+  if (x1 == x2) {
+    for (NaClO_float y = __naclo__min(y1, y2); y < __naclo__max(y1, y2);
+         y += (NaClO_float)radius / 4) {
+      NaClO_DotAA(canva, x1, y, color, radius);
+    }
+    return NACLO_OK;
+  }
+  if (y1 == y2) {
+    for (NaClO_float x = __naclo__min(x1, x2); x < __naclo__max(x1, x2);
+         x += (NaClO_float)radius / 4) {
+      NaClO_DotAA(canva, x, y1, color, radius);
+    }
+    return NACLO_OK;
+  }
   NaClO_float L = sqrtf(deltax * deltax + deltay * deltay);
   NaClO_float tanx = (NaClO_float)deltay / deltax;
-  for (NaClO_uint x = x1; x < x2; x += radius / 4) {
+  for (NaClO_float x = __naclo__min(x1, x2); x < __naclo__max(x1, x2);
+       x += (NaClO_float)radius / 4) {
     NaClO_uint y = (NaClO_float)(x * tanx);
-    NaClO_Dot(canva, x, y, color, radius);
+    NaClO_DotAA(canva, x, y, color, radius);
   }
   return NACLO_OK;
 }
+NaClO_ErrorType NaClO_DrawLineAA(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
+                                 NaClO_int x2, NaClO_int y2,
+                                 NaClO_PixelType color, NaClO_uint radius) {
+  if (canva == NULL) {
+    return NACLO_NULL_POINTER;
+  }
 
+  NaClO_int deltax = x1 - x2;
+  NaClO_int deltay = y1 - y2;
+  if (x1 == x2) {
+    for (NaClO_float y = __naclo__min(y1, y2); y < __naclo__max(y1, y2);
+         y += (NaClO_float)radius / 4) {
+      NaClO_DotAA(canva, x1, y, color, radius);
+    }
+    return NACLO_OK;
+  }
+  if (y1 == y2) {
+    for (NaClO_float x = __naclo__min(x1, x2); x < __naclo__max(x1, x2);
+         x += (NaClO_float)radius / 4) {
+      NaClO_DotAA(canva, x, y1, color, radius);
+    }
+    return NACLO_OK;
+  }
+  NaClO_float L = sqrtf(deltax * deltax + deltay * deltay);
+  NaClO_float tanx = (NaClO_float)deltay / deltax;
+  for (NaClO_float x = __naclo__min(x1, x2); x < __naclo__max(x1, x2);
+       x += (NaClO_float)radius / 4) {
+    NaClO_uint y = (NaClO_float)(x * tanx);
+    NaClO_DotAA(canva, x, y, color, radius);
+  }
+  return NACLO_OK;
+}
+NaClO_ErrorType NaClO_DrawRectangleAA(NaClO_Image *canva, NaClO_int x1,
+                                      NaClO_int y1, NaClO_int x2, NaClO_int y2,
+                                      NaClO_PixelType color, NaClO_uint radius,
+                                      bool filled) {
+  if (canva == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_DrawLineAA(canva, x1, y1, x1, y2, color, radius);
+  NaClO_DrawLineAA(canva, x1, y1, x2, y1, color, radius);
+  NaClO_DrawLineAA(canva, x2, y2, x2, y1, color, radius);
+  NaClO_DrawLineAA(canva, x2, y2, x1, y2, color, radius);
+  if (not filled) {
+    return NACLO_OK;
+  }
+  for (NaClO_uint x = x1; x < x2; ++x) {
+    for (NaClO_uint y = y1; y < y2; ++y) {
+      *NaClO_Pixel(canva, x, y) = color;
+    }
+  }
+  return NACLO_OK;
+}
+NaClO_ErrorType NaClO_DrawRectangle(NaClO_Image *canva, NaClO_int x1,
+                                    NaClO_int y1, NaClO_int x2, NaClO_int y2,
+                                    NaClO_PixelType color, NaClO_uint radius,
+                                    bool filled) {
+  if (canva == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_DrawLine(canva, x1, y1, x1, y2, color, radius);
+  NaClO_DrawLine(canva, x1, y1, x2, y1, color, radius);
+  NaClO_DrawLine(canva, x2, y2, x2, y1, color, radius);
+  NaClO_DrawLine(canva, x2, y2, x1, y2, color, radius);
+  if (not filled) {
+    return NACLO_OK;
+  }
+  for (NaClO_uint x = x1; x < x2; ++x) {
+    for (NaClO_uint y = y1; y < y2; ++y) {
+      *NaClO_Pixel(canva, x, y) = color;
+    }
+  }
+  return NACLO_OK;
+}
+NaClO_ErrorType NaClO_DrawEclipse(NaClO_Image *canva, NaClO_int centerX,NaClO_uint centerY,
+                                  NaClO_float a, NaClO_float b,
+                                  NaClO_PixelType color, bool filled) {
+  if (canva == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_float c = sqrtf(a * a + b * b);
+  
+
+}
 bool __naclo_NaClO_float_compare(NaClO_float a, NaClO_float b) {
   return (fabs(a - b) < 0.000001);
 }
@@ -4421,12 +4525,6 @@ NaClO_ImageResult NaClO_ReverseImage(const NaClO_Image *data) {
   return T;
 }
 
-static NaClO_float __naclo__min(NaClO_float i1, NaClO_float i2) {
-  return i1 > i2 ? i2 : i1;
-}
-static NaClO_float __naclo__max(NaClO_float i1, NaClO_float i2) {
-  return i1 > i2 ? i1 : i2;
-}
 // NaClO_ErrorType
 #define __naclo__2imgprol()                                                    \
   if (I1 == NULL or I2 == NULL) {                                              \
@@ -4522,7 +4620,7 @@ NaClO_ImageResult NaClO_Dissolve(const NaClO_Image *I1, const NaClO_Image *I2,
   return T;
 }
 
-#define __naclo__max(a, b) (a) > (b) ? (a) : (b)
+// #define __naclo__max(a, b) (a) > (b) ? (a) : (b)
 #define __naclo__min(a, b) (a) > (b) ? (b) : (a)
 NaClO_ErrorType NaClO_Lightened(NaClO_Image *I1, const NaClO_Image *I2) {
   __naclo__2imgprol();
