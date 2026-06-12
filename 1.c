@@ -114,7 +114,7 @@ int main() {
     NaClO_FreeImage(&src.result);
   }
 
-    {
+  {
     printf("ResizeRGBA\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
     printError(NaClO_Converted(&src.result, "rgba"));
@@ -123,7 +123,6 @@ int main() {
     printError(lp.Error);
     NaClO_SaveAndFree(&lp.result, "rgbaResize.png");
     NaClO_FreeImage(&src.result);
-  
   }
   // return 0;;
 
@@ -231,7 +230,6 @@ int main() {
     NaClO_FreeImage(&src.result);
     NaClO_SaveAndFree(&Rotate.result, "Rotate1.png");
   }
-
 
   {
     printf("RotatedAt\n");
@@ -676,6 +674,27 @@ int main() {
     printError(NaClO_SetCanny(&src.result, 0.1f, 0.3f));
     NaClO_SaveAndFree(&src.result, "canny.png");
   }
+  {
+    printf("BlendByMask\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_ImageResult mask = NaClO_Load("mask.png");
+    NaClO_BlendedByMask(&src.result, &src2.result, &mask.result);
+    NaClO_SaveAndFree(&src.result, "BlendByMask.png");
+    NaClO_FreeImage(&src2.result);
+    NaClO_FreeImage(&mask.result);
+  }
+  {
+    printf("DissolveByMask\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2 = NaClO_Load("HistEq.png");
+    NaClO_ImageResult mask = NaClO_Load("mask.png");
+    NaClO_DissolvedByMask(&src.result, &src2.result, &mask.result);
+    NaClO_SaveAndFree(&src.result, "DissolveByMask.png");
+    NaClO_FreeImage(&src2.result);
+    NaClO_FreeImage(&mask.result);
+  }
+  return 0;
   {
     printf("BW\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
