@@ -1,5 +1,6 @@
 #include "naclo_image1.h"
 #include "stdio.h"
+#include <math.h>
 #include <stdbool.h>
 #include <string.h>
 void PrintMatrix(NaClO_Matrix M) {
@@ -55,6 +56,7 @@ void printError(NaClO_ErrorType z) {
   printf("\n");
 }
 void PrintChannel(NaClO_Image c) {
+
   switch (c.mode) {
 
   case NaClO_RGB:
@@ -75,7 +77,41 @@ void PrintChannel(NaClO_Image c) {
   }
 }
 int main() {
-
+  {
+    // for (int x = 0; x < 100; ++x) {
+    //   float randm1 = ((float)rand() / RAND_MAX)-0.5f;
+    //   printf("%f\n",randm1);
+    // }
+    printf("GrainyBlurred\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_GrainyBlurred2(&src.result, 2, 2);
+    NaClO_SaveAndFree(&src.result, "GrainyBlurred.png");
+  }
+  {
+    printf("DrawCircleAA\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_DrawCircleAA(&src.result, 100, 100, pt, 40, false, 20));
+    NaClO_SaveAndFree(&src.result, "circleAA.png");
+  }
+  {
+    printf("DrawCircle\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 128, sizeof(pt));
+    printError(NaClO_DrawCircle(&src.result, 100, 100, pt, 40, false, 0));
+    NaClO_SaveAndFree(&src.result, "circle.png");
+  }
+    {
+    printf("Line\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_DrawLine(&src.result, 0, 0, 300, 300, pt, 8));
+    NaClO_SaveAndFree(&src.result, "line.png");
+  }
+  return 0;
   NaClO_ColorModeRGB rgb;
   rgb.r = 0;
   rgb.g = 114;
@@ -440,14 +476,7 @@ int main() {
     NaClO_SaveAndFree(&src.result, "sharpened.png");
   }
 
-  {
-    printf("Line\n");
-    NaClO_ImageResult src = NaClO_Load("color.png");
-    NaClO_PixelType pt;
-    memset(&pt, 1, sizeof(pt));
-    printError(NaClO_DrawLine(&src.result, 0, 0, 300, 300, pt, 8));
-    NaClO_SaveAndFree(&src.result, "line.png");
-  }
+
   {
     printf("Luminance\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
