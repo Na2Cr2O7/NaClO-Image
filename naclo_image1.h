@@ -424,6 +424,9 @@ NaClO_ImageResult NaClO_RadicalBlurAt(const NaClO_Image *data, NaClO_int cx,
                                       NaClO_int cy, NaClO_float strength);
 NaClO_ErrorType NaClO_RadicalBlurredAt(NaClO_Image *data, NaClO_int cx,
                                        NaClO_int cy, NaClO_float strength);
+NaClO_ImageResult NaClO_Sample(const NaClO_Image *data, NaClO_float ratio);
+NaClO_ErrorType NaClO_Bloomed(NaClO_Image *data, NaClO_uint strength);
+NaClO_ImageResult NaClO_Bloom(const NaClO_Image *data, NaClO_uint strength);
 #define NaClO_Burnt(I1, I2) NaClO_Burned(I1, I2)
 NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, const NaClO_Image *I2);
 #define NaClO_Unwrap(r) (assert((r).Error == NACLO_OK), (r).result)
@@ -3837,6 +3840,15 @@ NaClO_ErrorType NaClO_Bloomed(NaClO_Image *data, NaClO_uint strength) {
   NaClO_FreeImage(&mask.result);
   return NACLO_OK;
 }
+NaClO_ImageResult NaClO_Bloom(const NaClO_Image *data, NaClO_uint strength) {
+  NaClO_ImageResult T = NaClO_CopyImage(data);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  T.Error=NaClO_Bloomed(&T.result, strength);
+  return T;
+}
+
 NaClO_ImageResult NaClO_AvgBlur(const NaClO_Image *data, NaClO_uint strength) {
   NaClO_uint kernel = 2 * strength + 1;
   NaClO_ImageResult T = NaClO_CopyImage(data);
@@ -4081,7 +4093,8 @@ NaClO_ImageResult NaClO_GaussianBlur(const NaClO_Image *data,
   }
 
   // 预计算高斯权重并归一化
-  NaClO_float *weights = (NaClO_float *)NaClO_CALLOC(kernel * kernel, sizeof(NaClO_float));
+  NaClO_float *weights =
+      (NaClO_float *)NaClO_CALLOC(kernel * kernel, sizeof(NaClO_float));
   NaClO_float weightSum = 0;
   for (NaClO_uint kx = 0; kx < kernel; ++kx) {
     for (NaClO_uint ky = 0; ky < kernel; ++ky) {
@@ -4108,8 +4121,10 @@ NaClO_ImageResult NaClO_GaussianBlur(const NaClO_Image *data,
 
       for (NaClO_uint kx = 0; kx < kernel; ++kx) {
         for (NaClO_uint ky = 0; ky < kernel; ++ky) {
-          NaClO_int sampleX = (NaClO_int)x + (NaClO_int)kx - (NaClO_int)kernelCenter;
-          NaClO_int sampleY = (NaClO_int)y + (NaClO_int)ky - (NaClO_int)kernelCenter;
+          NaClO_int sampleX =
+              (NaClO_int)x + (NaClO_int)kx - (NaClO_int)kernelCenter;
+          NaClO_int sampleY =
+              (NaClO_int)y + (NaClO_int)ky - (NaClO_int)kernelCenter;
 
           // 边界检查
           if (sampleX >= 0 && sampleX < (NaClO_int)data->width &&
@@ -4547,13 +4562,12 @@ NaClO_ErrorType NaClO_DirectionalBlurred(NaClO_Image *data,
   return NACLO_OK;
 }
 
-NaClO_ErrorType NaClO_BokehBlurred(NaClO_Image *data,
-                                   NaClO_float strength) {
+NaClO_ErrorType NaClO_BokehBlurred(NaClO_Image *data, NaClO_float strength) {
   NaClO_ErrorType err = NaClO_GaussianBlurred(data, strength);
   if (err != NACLO_OK) {
     return err;
   }
-  return NaClO_Bloomed(data, strength*2);
+  return NaClO_Bloomed(data, strength * 2);
 }
 NaClO_ImageResult NaClO_HueSaturationValue(const NaClO_Image *data,
                                            NaClO_float hue,
