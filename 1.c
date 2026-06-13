@@ -84,8 +84,33 @@ int main() {
     // }
     printf("GrainyBlurred\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
-    NaClO_GrainyBlurred2(&src.result, 2, 2);
+    NaClO_GrainyBlurred(&src.result, 8);
     NaClO_SaveAndFree(&src.result, "GrainyBlurred.png");
+  }
+  {
+
+    printf("RadicalBlurAt\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult dst = NaClO_RadicalBlurAt(&src.result, 100, 100, 1);
+    NaClO_SaveAndFree(&dst.result, "RadicalBlurredAt.png");
+    NaClO_FreeImage(&src.result);
+  }
+  {
+    printf("RadicalBlur\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_RadicalBlurred(&src.result, 1);
+    NaClO_SaveAndFree(&src.result, "RadicalBlur.png");
+  }
+  return 0;
+  {
+    // for (int x = 0; x < 100; ++x) {
+    //   float randm1 = ((float)rand() / RAND_MAX)-0.5f;
+    //   printf("%f\n",randm1);
+    // }
+    printf("Bloom\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_Bloomed(&src.result, 8);
+    NaClO_SaveAndFree(&src.result, "bloom.png");
   }
   {
     printf("DrawCircleAA\n");
@@ -112,22 +137,42 @@ int main() {
     NaClO_SaveAndFree(&src.result, "line.png");
   }
   {
+    printf("Eclipse\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_PixelType pt;
+    memset(&pt, 1, sizeof(pt));
+    printError(NaClO_DrawEclipseAA(&src.result, 50, 50, 50, 20, pt, true, 0));
+    NaClO_SaveAndFree(&src.result, "Eclipse.png");
+  }
+
+  {
+    printf("sample\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    NaClO_ImageResult T2 = NaClO_Sample(&src.result, 0.4);
+    printError(T2.Error);
+    NaClO_SaveAndFree(&T2.result, "sample.png");
+    NaClO_FreeImage(&src.result);
+  }
+  {
     printf("Rect\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_PixelType pt;
     memset(&pt, 1, sizeof(pt));
-    printError(NaClO_DrawRectangleAA(&src.result, 50, 50, 300, 300, pt, 8, false));
+    printError(
+        NaClO_DrawRectangleAA(&src.result, 50, 50, 300, 300, pt, 8, false));
     NaClO_SaveAndFree(&src.result, "rect1.png");
   }
   {
     printf("Rect\n");
-    NaClO_ImageResult src = NaClO_Load("color.png");  
+    NaClO_ImageResult src = NaClO_Load("color.png");
     NaClO_PixelType pt;
     memset(&pt, 1, sizeof(pt));
-    printError(NaClO_DrawRectangleAA(&src.result, 50, 50, 300, 300, pt, 8, true));
+    printError(
+        NaClO_DrawRectangleAA(&src.result, 50, 50, 300, 300, pt, 8, true));
     NaClO_SaveAndFree(&src.result, "rect2.png");
   }
-  return 0;
+  // return 0;
   NaClO_ColorModeRGB rgb;
   rgb.r = 0;
   rgb.g = 114;

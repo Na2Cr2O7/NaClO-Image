@@ -254,6 +254,12 @@ void NaClO_EnumeratePixel(NaClO_Image *src, NaClO_SetPixelFunctionPointer f);
       f;                                                                       \
     }                                                                          \
   }
+#define NaClO_EnumeratePixel3(src, f)                                          \
+  for (int x = 0; x < src->width; ++x) {                                       \
+    for (int y = 0; y < src->height; ++y) {                                    \
+      f;                                                                       \
+    }                                                                          \
+  }
 NaClO_MatrixResult NaClO_NewMatrix(uint8_t x, uint8_t y);
 NaClO_ErrorType NaClO_FreeMatrix(NaClO_Matrix *matrix);
 NaClO_float *NaClO_MatrixElementYX(const NaClO_Matrix *matrix, uint8_t row,
@@ -399,6 +405,10 @@ NaClO_ErrorType NaClO_DrawCircleAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
 NaClO_ErrorType NaClO_DrawCircle(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                                  NaClO_PixelType color, NaClO_uint radius,
                                  bool filled, NaClO_uint radius2);
+NaClO_ErrorType NaClO_DrawEclipseAA(NaClO_Image *canva, NaClO_int x,
+                                    NaClO_int y, NaClO_float a, NaClO_float b,
+                                    NaClO_PixelType color, bool filled,
+                                    NaClO_uint offset);
 NaClO_ErrorType NaClO_DotAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                             NaClO_PixelType color, NaClO_uint radius);
 NaClO_ErrorType NaClO_DrawLineAA(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
@@ -408,6 +418,12 @@ NaClO_ErrorType NaClO_DrawRectangleAA(NaClO_Image *canva, NaClO_int x1,
                                       NaClO_int y1, NaClO_int x2, NaClO_int y2,
                                       NaClO_PixelType color, NaClO_uint radius,
                                       bool filled);
+NaClO_ErrorType NaClO_BlendedByMask(NaClO_Image *I1, const NaClO_Image *I2,
+                                    const NaClO_Image *mask);
+NaClO_ImageResult NaClO_RadicalBlurAt(const NaClO_Image *data, NaClO_int cx,
+                                      NaClO_int cy, NaClO_float strength);
+NaClO_ErrorType NaClO_RadicalBlurredAt(NaClO_Image *data, NaClO_int cx,
+                                       NaClO_int cy, NaClO_float strength);
 #define NaClO_Burnt(I1, I2) NaClO_Burned(I1, I2)
 NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, const NaClO_Image *I2);
 #define NaClO_Unwrap(r) (assert((r).Error == NACLO_OK), (r).result)
@@ -1140,7 +1156,12 @@ NaClO_ImageResult NaClO_NewImage(NaClO_uint w, NaClO_uint h,
   T.Error = NACLO_OK;
   return T;
 }
-
+NaClO_ImageResult NaClO_NewBlankImage(NaClO_uint w, NaClO_uint h,
+                                      NaClO_ColorMode mode) {
+  NaClO_PixelType pt;
+  memset(&pt, 0, sizeof(pt));
+  return NaClO_NewImage(w, h, mode, pt);
+}
 NaClO_ImageResult NaClO_Flip(const NaClO_Image *data,
                              NaClO_FlipDirection direction) {
   __NaClO__makeResult(T);
@@ -1455,6 +1476,84 @@ NaClO_ErrorType NaClO_DrawCircleAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
   }
   return NACLO_OK;
 }
+NaClO_ErrorType NaClO_DrawEclipseAA(NaClO_Image *canva, NaClO_int x,
+                                    NaClO_int y, NaClO_float a, NaClO_float b,
+                                    NaClO_PixelType color, bool filled,
+                                    NaClO_uint offset) {
+
+  if (canva == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  if (a == b) {
+    return NaClO_DrawCircleAA(canva, x, y, color, (NaClO_uint)a, filled,
+                              (NaClO_uint)(a - offset));
+  }
+  a = fabs(a);
+  b = fabs(b);
+  NaClO_float a2 = a * a;
+  NaClO_float b2 = b * b;
+  NaClO_int startX = (NaClO_int)(x - a - 1);
+  NaClO_int endX = (NaClO_int)(x + a + 1);
+  NaClO_int startY = (NaClO_int)(y - b - 1);
+  NaClO_int endY = (NaClO_int)(y + b + 1);
+  NaClO_float inner_a = a - offset;
+  NaClO_float inner_b = b - offset;
+  NaClO_float inner_a2 = inner_a * inner_a;
+  NaClO_float inner_b2 = inner_b * inner_b;
+
+  for (NaClO_int ny = startY; ny <= endY; ++ny) {
+    for (NaClO_int nx = startX; nx <= endX; ++nx) {
+      if (nx < 0 or (NaClO_uint) nx >= canva->width) {
+        continue;
+      }
+      if (ny < 0 or (NaClO_uint) ny >= canva->height) {
+        continue;
+      }
+      NaClO_float dx = (NaClO_float)(nx - x);
+      NaClO_float dy = (NaClO_float)(ny - y);
+      NaClO_float dist_ratio = (dx * dx) / a2 + (dy * dy) / b2;
+
+      if (filled) {
+        if (dist_ratio <= 1.0f) {
+          if (offset > 0) {
+            NaClO_float inner_dist_ratio =
+                (dx * dx) / inner_a2 + (dy * dy) / inner_b2;
+            if (inner_dist_ratio >= 1.0f) {
+              NaClO_float ratio = powf(dist_ratio, a * b);
+              *NaClO_Pixel(canva, (NaClO_uint)nx, (NaClO_uint)ny) =
+                  NaClO_BlendPixel(color, *NaClO_Pixel(canva, nx, ny), ratio,
+                                   canva->mode);
+            }
+          } else {
+            NaClO_float ratio = powf(dist_ratio, a * b);
+            *NaClO_Pixel(canva, (NaClO_uint)nx, (NaClO_uint)ny) =
+                NaClO_BlendPixel(color, *NaClO_Pixel(canva, nx, ny), ratio,
+                                 canva->mode);
+          }
+        }
+      } else {
+        if (dist_ratio <= 1.0f) {
+          if (offset > 0) {
+            NaClO_float inner_dist_ratio =
+                (dx * dx) / inner_a2 + (dy * dy) / inner_b2;
+            if (inner_dist_ratio >= 1.0f) {
+              NaClO_float ratio = powf(dist_ratio, a * b);
+              *NaClO_Pixel(canva, (NaClO_uint)nx, (NaClO_uint)ny) =
+                  NaClO_BlendPixel(color, *NaClO_Pixel(canva, nx, ny), ratio,
+                                   canva->mode);
+            }
+          } else {
+            NaClO_float ratio = powf(dist_ratio, a * b);
+            *NaClO_Pixel(canva, (NaClO_uint)nx, (NaClO_uint)ny) =
+                NaClO_BlendPixel(color, *NaClO_Pixel(canva, nx, ny), ratio,
+                                 canva->mode);
+          }
+        }
+      }
+    }
+  }
+  return NACLO_OK;
+}
 NaClO_ErrorType NaClO_DotAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                             NaClO_PixelType color, NaClO_uint radius) {
   return NaClO_DrawCircleAA(canva, x, y, color, radius, true, 0);
@@ -1569,16 +1668,7 @@ NaClO_ErrorType NaClO_DrawRectangle(NaClO_Image *canva, NaClO_int x1,
   }
   return NACLO_OK;
 }
-NaClO_ErrorType NaClO_DrawEclipse(NaClO_Image *canva, NaClO_int centerX,NaClO_uint centerY,
-                                  NaClO_float a, NaClO_float b,
-                                  NaClO_PixelType color, bool filled) {
-  if (canva == NULL) {
-    return NACLO_NULL_POINTER;
-  }
-  NaClO_float c = sqrtf(a * a + b * b);
-  
 
-}
 bool __naclo_NaClO_float_compare(NaClO_float a, NaClO_float b) {
   return (fabs(a - b) < 0.000001);
 }
@@ -1757,7 +1847,7 @@ NaClO_float *NaClO_MatrixElement1(const NaClO_Matrix *matrix, uint8_t col,
 }
 NaClO_MatrixResult NaClO_CopyMatrix(const NaClO_Matrix *matrix) {
   NaClO_MatrixResult M;
-  memset(&M, 1, sizeof(M));
+  memset(&M, 0, sizeof(M));
   if (matrix == NULL) {
     M.Error = NACLO_ZERO_WIDTH_OR_HEIGHT;
     return M;
@@ -2029,7 +2119,7 @@ NaClO_MatrixResult NaClO_MatrixInversion(const NaClO_Matrix *matrix) {
 NaClO_MatrixResult NaClO_DotProduct(const NaClO_Matrix *matrix1,
                                     const NaClO_Matrix *matrix2) {
   NaClO_MatrixResult M;
-  memset(&M, 1, sizeof(M));
+  memset(&M, 0, sizeof(M));
 
   if (matrix1 == NULL) {
     M.Error = NACLO_NULL_POINTER;
@@ -2193,7 +2283,7 @@ NaClO_PixelType __naclo_bilinear_sample(const NaClO_Image *img, NaClO_float x,
   NaClO_PixelType p11 = *NaClO_Pixel(img, x1, y1);
 
   NaClO_PixelType result;
-  memset(&result, 1, sizeof(result));
+  memset(&result, 0, sizeof(result));
 
   switch (img->mode) {
   case NaClO_RGB:
@@ -2330,7 +2420,7 @@ NaClO_ImageResult NaClO_Expand(const NaClO_Image *data, NaClO_uint newWidth,
     return T;
   }
   NaClO_PixelType Pt;
-  memset(&Pt, 1, sizeof(Pt));
+  memset(&Pt, 0, sizeof(Pt));
   NaClO_ImageResult T2 = NaClO_NewImage(newWidth, newHeight, data->mode, Pt);
   if (T2.Error != NACLO_OK) {
     __NaClO__makeError(T, T2.Error);
@@ -2567,7 +2657,7 @@ NaClO_ImageResult NaClO_RotateAt(const NaClO_Image *data, NaClO_float angleDeg,
   NaClO_uint newHeight = data->height + fabs(deltaY);
 
   NaClO_PixelType pt;
-  memset(&pt, 1, sizeof(pt));
+  memset(&pt, 0, sizeof(pt));
   NaClO_ImageResult T2 = NaClO_NewImage(newWidth, newHeight, data->mode, pt);
   if (T2.Error != NACLO_OK) {
     __NaClO__makeError(T, T2.Error);
@@ -2901,7 +2991,7 @@ NaClO_ImageResult NaClO_Perspective(const NaClO_Image *data, NaClO_uint x1,
   NaClO_FreeMatrix(&MR.result);
 
   NaClO_PixelType pt;
-  memset(&pt, 1, sizeof(pt));
+  memset(&pt, 0, sizeof(pt));
   T = NaClO_NewImage(data->width, data->height, data->mode, pt);
 
   for (NaClO_uint dstX = 0; dstX < data->width; ++dstX) {
@@ -3681,7 +3771,72 @@ NaClO_ErrorType NaClO_SetCanny(NaClO_Image *data, NaClO_float lowThreshold,
   *data = T.result;
   return NACLO_OK;
 }
+NaClO_ImageResult NaClO_Sample(const NaClO_Image *data, NaClO_float ratio) {
+  __NaClO__makeResult(T);
+  if (data == NULL) {
+    __NaClO__makeError(T, NACLO_NULL_POINTER);
+  }
+  NaClO_PixelType pt;
+  memset(&pt, 0, sizeof(pt));
+  T = NaClO_NewImage(data->width, data->height, data->mode, pt);
+  if (ratio > 1) {
+    ratio = 1;
+  }
+  if (ratio < 0) {
+    ratio = 0;
+  }
 
+  for (int x = 0; x < data->width; ++x) {
+    for (int y = 0; y < data->height; ++y) {
+      if (((NaClO_float)rand() / RAND_MAX < ratio)) {
+        *NaClO_Pixel(&T.result, x, y) = *NaClO_Pixel(data, x, y);
+      }
+    }
+  };
+  T.Error = NACLO_OK;
+  return T;
+}
+NaClO_ErrorType NaClO_Bloomed(NaClO_Image *data, NaClO_uint strength) {
+
+  NaClO_float lim = 1 - (NaClO_float)(strength) * 0.1f;
+  if (data == NULL) {
+    return NACLO_NULL_POINTER;
+  }
+  NaClO_ErrorType err = NaClO_Converted(data, "rgba");
+  NaClO_PixelType pt;
+  memset(&pt, 0, sizeof(pt));
+  NaClO_PixelType pt2;
+  pt2.L = 1;
+  NaClO_ImageResult mask =
+      NaClO_NewImage(data->width, data->height, NaClO_L, pt);
+  if (mask.Error != NACLO_OK) {
+    return mask.Error;
+  }
+  NaClO_ImageResult temp = NaClO_Blur(data, strength * 2);
+  if (temp.Error != NACLO_OK) {
+    NaClO_FreeImage(&mask.result);
+
+    return temp.Error;
+  }
+
+  if (err != NACLO_OK) {
+    return err;
+  }
+  for (NaClO_uint x = 0; x < data->width; ++x) {
+    for (NaClO_uint y = 0; y < data->height; ++y) {
+      NaClO_PixelType p = *NaClO_Pixel(data, x, y);
+      NaClO_float lum = NaClO_Luminance2(p.RGBA);
+      if (lum > lim) {
+        *NaClO_Pixel(&mask.result, x, y) = pt2;
+      }
+    }
+  };
+  NaClO_Blurred(&mask.result, strength * 2);
+  NaClO_BlendedByMask(data, &temp.result, &mask.result);
+  NaClO_FreeImage(&temp.result);
+  NaClO_FreeImage(&mask.result);
+  return NACLO_OK;
+}
 NaClO_ImageResult NaClO_AvgBlur(const NaClO_Image *data, NaClO_uint strength) {
   NaClO_uint kernel = 2 * strength + 1;
   NaClO_ImageResult T = NaClO_CopyImage(data);
@@ -4122,21 +4277,26 @@ NaClO_ErrorType NaClO_GrainyBlurred(NaClO_Image *data, NaClO_uint strength) {
     return NACLO_NULL_POINTER;
   }
   strength *= 2;
-  srand(2314);
+  srand((unsigned int)time(NULL)); // 使用时间种子
   NaClO_float randm1;
   for (NaClO_uint x = 0; x < data->width; ++x) {
     for (NaClO_uint y = 0; y < data->height; ++y) {
       randm1 = ((NaClO_float)rand() / RAND_MAX) - 0.5f;
       randm1 *= strength;
-      NaClO_uint newX = x + randm1;
+      NaClO_int newX = (NaClO_int)x + (NaClO_int)randm1; // 使用有符号整数
       randm1 = ((NaClO_float)rand() / RAND_MAX) - 0.5f;
       randm1 *= strength;
-      NaClO_uint newY = y + randm1;
-      if (newX >= data->width)
+      NaClO_int newY = (NaClO_int)y + (NaClO_int)randm1;
+      if (newX < 0)
+        newX = 0;
+      if (newY < 0)
+        newY = 0;
+      if ((NaClO_uint)newX >= data->width)
         newX = data->width - 1;
-      if (newY >= data->height)
+      if ((NaClO_uint)newY >= data->height)
         newY = data->height - 1;
-      *NaClO_Pixel(data, x, y) = *NaClO_Pixel(data, newX, newY);
+      *NaClO_Pixel(data, x, y) =
+          *NaClO_Pixel(data, (NaClO_uint)newX, (NaClO_uint)newY);
     }
   }
   return NACLO_OK;
@@ -4150,8 +4310,9 @@ NaClO_ImageResult NaClO_GrainyBlur(const NaClO_Image *data,
   T.Error = NaClO_GrainyBlurred(&T.result, strength);
   return T;
 }
-NaClO_ErrorType NaClO_GrainyBlurred2(NaClO_Image *data, NaClO_uint strength,
-                                     NaClO_uint repeat) {
+NaClO_ErrorType NaClO_GrainyBlurredRepeat(NaClO_Image *data,
+                                          NaClO_uint strength,
+                                          NaClO_uint repeat) {
   for (NaClO_uint x = 0; x < repeat; ++x) {
     NaClO_ErrorType err = NaClO_GrainyBlurred(data, strength);
     if (err != NACLO_OK) {
@@ -4160,14 +4321,112 @@ NaClO_ErrorType NaClO_GrainyBlurred2(NaClO_Image *data, NaClO_uint strength,
   }
   return NACLO_OK;
 }
-NaClO_ImageResult NaClO_GrainyBlur2(const NaClO_Image *data,
-                                    NaClO_uint strength, NaClO_uint repeat) {
+NaClO_ImageResult NaClO_GrainyBlurRepeat(const NaClO_Image *data,
+                                         NaClO_uint strength,
+                                         NaClO_uint repeat) {
   NaClO_ImageResult T = NaClO_CopyImage(data);
   if (T.Error != NACLO_OK) {
     return T;
   }
-  T.Error = NaClO_GrainyBlurred2(&T.result, strength, repeat);
+  T.Error = NaClO_GrainyBlurredRepeat(&T.result, strength, repeat);
   return T;
+}
+NaClO_ImageResult NaClO_RadicalBlurAt(const NaClO_Image *data, NaClO_int cx,
+                                      NaClO_int cy, NaClO_float strength) {
+
+  __NaClO__makeResult(T);
+  if (data == NULL) {
+    __NaClO__makeError(T, NACLO_NULL_POINTER)
+  }
+  strength /= 30;
+  NaClO_uint samples = 300;
+  T = NaClO_NewBlankImage(data->width, data->height, data->mode);
+  for (int x = 0; x < data->width; ++x) {
+    for (int y = 0; y < data->height; ++y) {
+      NaClO_uint sumr = 0, sumg = 0, sumb = 0, sum1 = 0, suma = 0;
+      NaClO_float sumL = 0.0f;
+      NaClO_int dx = (NaClO_int)x - cx;
+      NaClO_int dy = (NaClO_int)y - cy;
+
+      for (NaClO_uint i = 0; i < samples; ++i) {
+        NaClO_float scale = 1.0 - ((NaClO_float)strength * i / samples);
+        NaClO_float sampleX = cx + (NaClO_float)dx * scale;
+        NaClO_float sampleY = cy + (NaClO_float)dy * scale;
+        if ((sampleX >= 0 and sampleX < data->width) and
+            (sampleY >= 0 and sampleY < data->height)) {
+          NaClO_PixelType pt = *NaClO_Pixel(data, sampleX, sampleY);
+          switch (data->mode) {
+
+          case NaClO_RGB:
+            sumr += pt.RGB.r;
+            sumg += pt.RGB.g;
+            sumb += pt.RGB.b;
+            break;
+          case NaClO_RGBA:
+            sumr += pt.RGBA.r;
+            sumg += pt.RGBA.g;
+            sumb += pt.RGBA.b;
+            suma += pt.RGBA.a;
+            break;
+          case NaClO_L:
+            sumL += pt.L;
+            break;
+          case NaClO_1:
+            sum1 += pt.value ? 1 : 0;
+            break;
+          }
+        }
+      }
+      NaClO_PixelType pt2;
+      switch (data->mode) {
+
+      case NaClO_RGB:
+        pt2.RGB.r = sumr / samples;
+        pt2.RGB.g = sumg / samples;
+        pt2.RGB.b = sumb / samples;
+        break;
+      case NaClO_RGBA:
+        pt2.RGBA.r = sumr / samples;
+        pt2.RGBA.g = sumg / samples;
+        pt2.RGBA.b = sumb / samples;
+        pt2.RGBA.a = suma / samples;
+        break;
+
+      case NaClO_L:
+        pt2.L = sumL / samples;
+        break;
+
+      case NaClO_1:
+        pt2.value = sum1 / samples >= 1;
+        break;
+      }
+      *NaClO_Pixel(&T.result, x, y) = pt2;
+    }
+  };
+  T.Error = NACLO_OK;
+  return T;
+}
+NaClO_ErrorType NaClO_RadicalBlurredAt(NaClO_Image *data, NaClO_int cx,
+                                       NaClO_int cy, NaClO_float strength) {
+  NaClO_ImageResult T = NaClO_RadicalBlurAt(data, cx, cy, strength);
+  if (T.Error != NACLO_OK) {
+    return T.Error;
+  }
+  NaClO_FreeImage(data);
+  *data = T.result;
+  return NACLO_OK;
+}
+NaClO_ImageResult NaClO_RadicalBlur(const NaClO_Image *data, NaClO_float strength)
+{
+  NaClO_uint cx=data->width/2;
+  NaClO_uint cy=data->height/2;
+  return NaClO_RadicalBlurAt(data, cx, cy, strength);
+}
+NaClO_ErrorType NaClO_RadicalBlurred(NaClO_Image *data, NaClO_float strength)
+{
+  NaClO_uint cx=data->width/2;
+  NaClO_uint cy=data->height/2;
+  return NaClO_RadicalBlurredAt(data, cx, cy, strength);
 }
 NaClO_ImageResult NaClO_HueSaturationValue(const NaClO_Image *data,
                                            NaClO_float hue,
@@ -4231,7 +4490,7 @@ NaClO_ErrorType NaClO_GradientHistogram(const NaClO_Image *data,
   if (data == NULL or outHistogram == NULL) {
     return NACLO_NULL_POINTER;
   }
-  memset(outHistogram, 256, sizeof(NaClO_uint));
+  // memset(outHistogram, 256, sizeof(NaClO_uint));
   NaClO_ImageResult T = NaClO_Convert(data, "L");
   if (T.Error != NACLO_OK) {
     return T.Error;
@@ -4257,9 +4516,9 @@ NaClO_ErrorType NaClO_RGBHistogram(const NaClO_Image *data,
       outBHistogram == NULL) {
     return NACLO_NULL_POINTER;
   }
-  memset(outRHistogram, 256, sizeof(NaClO_uint));
-  memset(outGHistogram, 256, sizeof(NaClO_uint));
-  memset(outBHistogram, 256, sizeof(NaClO_uint));
+  // memset(outRHistogram, 256, sizeof(NaClO_uint));
+  // memset(outGHistogram, 256, sizeof(NaClO_uint));
+  // memset(outBHistogram, 256, sizeof(NaClO_uint));
   NaClO_ImageResult T = NaClO_Convert(data, "rgb");
   if (T.Error != NACLO_OK) {
     return T.Error;
