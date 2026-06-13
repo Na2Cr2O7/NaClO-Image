@@ -4069,49 +4069,74 @@ NaClO_ErrorType NaClO_MedianBlurred(NaClO_Image *data, NaClO_uint strength) {
 
 static NaClO_float NaClO_StandardNormalDistribution2D(NaClO_float x,
                                                       NaClO_float y) {
-  return (1.0f / sqrtf(2 * NaClO_PI)) * powf(NaClO_e, (x * x + y * y) / 2);
+  return (1.0f / (2 * NaClO_PI)) * powf(NaClO_e, -(x * x + y * y) / 2);
 }
 NaClO_ImageResult NaClO_GaussianBlur(const NaClO_Image *data,
                                      NaClO_uint strength) {
   NaClO_uint kernel = 2 * strength + 1;
-  NaClO_uint kernelCenter = floorf((NaClO_float)kernel / 2);
+  NaClO_uint kernelCenter = kernel / 2;
   NaClO_ImageResult T = NaClO_CopyImage(data);
   if (T.Error != NACLO_OK) {
     return T;
   }
-  for (NaClO_uint x = 0; x < data->width - kernel; ++x) {
-    for (NaClO_uint y = 0; y < data->height - kernel; ++y) {
+
+  // 预计算高斯权重并归一化
+  NaClO_float *weights = (NaClO_float *)NaClO_CALLOC(kernel * kernel, sizeof(NaClO_float));
+  NaClO_float weightSum = 0;
+  for (NaClO_uint kx = 0; kx < kernel; ++kx) {
+    for (NaClO_uint ky = 0; ky < kernel; ++ky) {
+      NaClO_float w = NaClO_StandardNormalDistribution2D(
+          (NaClO_float)(kx - kernelCenter), (NaClO_float)(ky - kernelCenter));
+      weights[ky * kernel + kx] = w;
+      weightSum += w;
+    }
+  }
+  // 归一化
+  for (NaClO_uint i = 0; i < kernel * kernel; ++i) {
+    weights[i] /= weightSum;
+  }
+
+  for (NaClO_uint x = 0; x < data->width; ++x) {
+    for (NaClO_uint y = 0; y < data->height; ++y) {
       NaClO_float r = 0;
       NaClO_float g = 0;
       NaClO_float b = 0;
+      NaClO_float a = 0;
       NaClO_float L = 0;
       NaClO_float value = 0;
-      NaClO_PixelType pt;
+      NaClO_float weightUsed = 0;
 
       for (NaClO_uint kx = 0; kx < kernel; ++kx) {
         for (NaClO_uint ky = 0; ky < kernel; ++ky) {
+          NaClO_int sampleX = (NaClO_int)x + (NaClO_int)kx - (NaClO_int)kernelCenter;
+          NaClO_int sampleY = (NaClO_int)y + (NaClO_int)ky - (NaClO_int)kernelCenter;
 
-          pt = *NaClO_Pixel(data, x + kx, y + ky);
-          NaClO_float factor = NaClO_StandardNormalDistribution2D(
-              kx - kernelCenter, ky - kernelCenter);
-          switch (data->mode) {
+          // 边界检查
+          if (sampleX >= 0 && sampleX < (NaClO_int)data->width &&
+              sampleY >= 0 && sampleY < (NaClO_int)data->height) {
+            NaClO_PixelType pt = *NaClO_Pixel(data, sampleX, sampleY);
+            NaClO_float factor = weights[ky * kernel + kx];
+            weightUsed += factor;
+            switch (data->mode) {
 
-          case NaClO_RGB:
-            r += (NaClO_float)(pt.RGB.r) * factor;
-            g += (NaClO_float)(pt.RGB.g) * factor;
-            b += (NaClO_float)(pt.RGB.b) * factor;
-            break;
-          case NaClO_RGBA:
-            r += (NaClO_float)(pt.RGBA.r) * factor;
-            g += (NaClO_float)(pt.RGBA.g) * factor;
-            b += (NaClO_float)(pt.RGBA.b) * factor;
-            break;
-          case NaClO_L:
-            L += pt.L * 255.0f * factor;
-            break;
-          case NaClO_1:
-            value += pt.value * factor;
-            break;
+            case NaClO_RGB:
+              r += (NaClO_float)(pt.RGB.r) * factor;
+              g += (NaClO_float)(pt.RGB.g) * factor;
+              b += (NaClO_float)(pt.RGB.b) * factor;
+              break;
+            case NaClO_RGBA:
+              r += (NaClO_float)(pt.RGBA.r) * factor;
+              g += (NaClO_float)(pt.RGBA.g) * factor;
+              b += (NaClO_float)(pt.RGBA.b) * factor;
+              a += (NaClO_float)(pt.RGBA.a) * factor;
+              break;
+            case NaClO_L:
+              L += pt.L * factor;
+              break;
+            case NaClO_1:
+              value += pt.value * factor;
+              break;
+            }
           }
         }
       }
@@ -4119,29 +4144,27 @@ NaClO_ImageResult NaClO_GaussianBlur(const NaClO_Image *data,
       NaClO_PixelType pt2;
       switch (data->mode) {
       case NaClO_RGB:
-        pt2.RGB.r = r;
-        pt2.RGB.g = g;
-        pt2.RGB.b = b;
+        pt2.RGB.r = (uint8_t)(r / weightUsed + 0.5f);
+        pt2.RGB.g = (uint8_t)(g / weightUsed + 0.5f);
+        pt2.RGB.b = (uint8_t)(b / weightUsed + 0.5f);
         break;
       case NaClO_RGBA:
-        pt2.RGBA.r = r;
-        pt2.RGBA.g = g;
-        pt2.RGBA.b = b;
+        pt2.RGBA.r = (uint8_t)(r / weightUsed + 0.5f);
+        pt2.RGBA.g = (uint8_t)(g / weightUsed + 0.5f);
+        pt2.RGBA.b = (uint8_t)(b / weightUsed + 0.5f);
+        pt2.RGBA.a = (uint8_t)(a / weightUsed + 0.5f);
         break;
       case NaClO_L:
-        pt2.L = L / 255.0f;
+        pt2.L = L / weightUsed;
         break;
       case NaClO_1:
-        pt2.value = value > ((NaClO_float)(kernel * kernel) / 2);
+        pt2.value = value / weightUsed > 0.5f;
         break;
       }
-      for (NaClO_uint kx = 0; kx < kernel; ++kx) {
-        for (NaClO_uint ky = 0; ky < kernel; ++ky) {
-          *NaClO_Pixel(&T.result, x + kx, y + ky) = pt2;
-        }
-      }
+      *NaClO_Pixel(&T.result, x, y) = pt2;
     }
   }
+  NaClO_FREE(weights);
   T.Error = NACLO_OK;
   return T;
 }
@@ -4341,6 +4364,9 @@ NaClO_ImageResult NaClO_RadicalBlurAt(const NaClO_Image *data, NaClO_int cx,
   strength /= 30;
   NaClO_uint samples = 300;
   T = NaClO_NewBlankImage(data->width, data->height, data->mode);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
   for (int x = 0; x < data->width; ++x) {
     for (int y = 0; y < data->height; ++y) {
       NaClO_uint sumr = 0, sumg = 0, sumb = 0, sum1 = 0, suma = 0;
@@ -4416,17 +4442,118 @@ NaClO_ErrorType NaClO_RadicalBlurredAt(NaClO_Image *data, NaClO_int cx,
   *data = T.result;
   return NACLO_OK;
 }
-NaClO_ImageResult NaClO_RadicalBlur(const NaClO_Image *data, NaClO_float strength)
-{
-  NaClO_uint cx=data->width/2;
-  NaClO_uint cy=data->height/2;
+NaClO_ImageResult NaClO_RadicalBlur(const NaClO_Image *data,
+                                    NaClO_float strength) {
+  NaClO_uint cx = data->width / 2;
+  NaClO_uint cy = data->height / 2;
   return NaClO_RadicalBlurAt(data, cx, cy, strength);
 }
-NaClO_ErrorType NaClO_RadicalBlurred(NaClO_Image *data, NaClO_float strength)
-{
-  NaClO_uint cx=data->width/2;
-  NaClO_uint cy=data->height/2;
+NaClO_ErrorType NaClO_RadicalBlurred(NaClO_Image *data, NaClO_float strength) {
+  NaClO_uint cx = data->width / 2;
+  NaClO_uint cy = data->height / 2;
   return NaClO_RadicalBlurredAt(data, cx, cy, strength);
+}
+NaClO_ImageResult NaClO_DirectionalBlur(const NaClO_Image *data,
+                                        NaClO_float anglesDeg,
+                                        NaClO_float strength) {
+
+  __NaClO__makeResult(T);
+  if (data == NULL) {
+    __NaClO__makeError(T, NACLO_NULL_POINTER)
+  }
+  NaClO_float anglesRad = __naclo_deg_to_rad(anglesDeg);
+  NaClO_float dx = cosf(anglesRad);
+  NaClO_float dy = sinf(anglesRad);
+  strength /= 30;
+  NaClO_uint samples = 300;
+  T = NaClO_CopyImage(data);
+  if (T.Error != NACLO_OK) {
+    return T;
+  }
+  for (int x = 0; x < data->width; ++x) {
+    for (int y = 0; y < data->height; ++y) {
+      NaClO_uint sumr = 0, sumg = 0, sumb = 0, sum1 = 0, suma = 0;
+      NaClO_float sumL = 0.0f;
+      NaClO_uint count = 0;
+      for (NaClO_int i = (-samples) / 2; i < (samples / 2) + 1; ++i) {
+        NaClO_float offset = (strength * i) / samples;
+        NaClO_int sampleX = (NaClO_int)(x + dx * offset);
+        NaClO_int sampleY = (NaClO_int)(y + dy * offset);
+        if ((sampleX >= 0 and sampleX < data->width) and
+            (sampleY >= 0 and sampleY < data->height)) {
+          NaClO_PixelType pt = *NaClO_Pixel(data, sampleX, sampleY);
+          switch (data->mode) {
+
+          case NaClO_RGB:
+            sumr += pt.RGB.r;
+            sumg += pt.RGB.g;
+            sumb += pt.RGB.b;
+            break;
+          case NaClO_RGBA:
+            sumr += pt.RGBA.r;
+            sumg += pt.RGBA.g;
+            sumb += pt.RGBA.b;
+            suma += pt.RGBA.a;
+            break;
+          case NaClO_L:
+            sumL += pt.L;
+            break;
+          case NaClO_1:
+            sum1 += pt.value ? 1 : 0;
+            break;
+          }
+          count++;
+        }
+      }
+      if (count > 0) {
+        NaClO_PixelType pt2;
+        switch (data->mode) {
+
+        case NaClO_RGB:
+          pt2.RGB.r = sumr / count;
+          pt2.RGB.g = sumg / count;
+          pt2.RGB.b = sumb / count;
+          break;
+        case NaClO_RGBA:
+          pt2.RGBA.r = sumr / count;
+          pt2.RGBA.g = sumg / count;
+          pt2.RGBA.b = sumb / count;
+          pt2.RGBA.a = suma / count;
+          break;
+        case NaClO_L:
+          pt2.L = sumL / count;
+          break;
+        case NaClO_1:
+          pt2.value = (NaClO_float)sum1 / count > 0.5f;
+          break;
+        }
+        *NaClO_Pixel(&T.result, x, y) = pt2;
+      }
+    }
+  };
+  T.Error = NACLO_OK;
+  return T;
+}
+NaClO_ErrorType NaClO_DirectionalBlurred(NaClO_Image *data,
+                                         NaClO_float anglesDeg,
+                                         NaClO_float strength) {
+  NaClO_ImageResult T = NaClO_DirectionalBlur(data, anglesDeg, strength);
+  if (T.Error != NACLO_OK) {
+    return T.Error;
+  }
+  NaClO_FreeImage(data);
+  *data = T.result;
+  memset(&T.result, 0, sizeof(NaClO_Image));
+  return NACLO_OK;
+}
+
+NaClO_ErrorType NaClO_BokehBlurred(NaClO_Image *data,
+                                   NaClO_float strength) {
+  NaClO_ErrorType err = NaClO_GaussianBlurred(data, strength);
+  if (err != NACLO_OK) {
+    return err;
+  }
+  return NaClO_Bloomed(data, strength*2);
 }
 NaClO_ImageResult NaClO_HueSaturationValue(const NaClO_Image *data,
                                            NaClO_float hue,

@@ -101,7 +101,32 @@ int main() {
     NaClO_RadicalBlurred(&src.result, 1);
     NaClO_SaveAndFree(&src.result, "RadicalBlur.png");
   }
-  return 0;
+  {
+    printf("gaussia\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ErrorType err = NaClO_GaussianBlurred(&src.result, 15);
+    printError(err);
+    NaClO_SaveAndFree(&src.result, "gaussian2.png");
+    // NaClO_FreeImage(&src.result);
+  }
+  {
+    printf("Bokeh\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ErrorType err = NaClO_BokehBlurred(&src.result, 15);
+    printError(err);
+    NaClO_SaveAndFree(&src.result, "bokeh.png");
+    // NaClO_FreeImage(&src.result);
+  }
+    {
+    printf("GaussianBlur\n");
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
+    NaClO_ImageResult lp = NaClO_AvgBlur(&src.result, 8);
+    printError(lp.Error);
+    NaClO_SaveAndFree(&lp.result, "GaussianBlur3.png");
+    NaClO_FreeImage(&src.result);
+    // NormalDistribution2D(2,2);
+  }
   {
     // for (int x = 0; x < 100; ++x) {
     //   float randm1 = ((float)rand() / RAND_MAX)-0.5f;
@@ -112,6 +137,8 @@ int main() {
     NaClO_Bloomed(&src.result, 8);
     NaClO_SaveAndFree(&src.result, "bloom.png");
   }
+  return 0;
+
   {
     printf("DrawCircleAA\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
