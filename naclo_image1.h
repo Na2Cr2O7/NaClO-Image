@@ -427,6 +427,8 @@ NaClO_ErrorType NaClO_RadicalBlurredAt(NaClO_Image *data, NaClO_int cx,
 NaClO_ImageResult NaClO_Sample(const NaClO_Image *data, NaClO_float ratio);
 NaClO_ErrorType NaClO_Bloomed(NaClO_Image *data, NaClO_uint strength);
 NaClO_ImageResult NaClO_Bloom(const NaClO_Image *data, NaClO_uint strength);
+NaClO_ImageResult NaClO_WhiteNoise(NaClO_uint width, NaClO_uint height,
+                                   float ratio, bool rgb);
 #define NaClO_Burnt(I1, I2) NaClO_Burned(I1, I2)
 NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, const NaClO_Image *I2);
 #define NaClO_Unwrap(r) (assert((r).Error == NACLO_OK), (r).result)
@@ -3845,7 +3847,7 @@ NaClO_ImageResult NaClO_Bloom(const NaClO_Image *data, NaClO_uint strength) {
   if (T.Error != NACLO_OK) {
     return T;
   }
-  T.Error=NaClO_Bloomed(&T.result, strength);
+  T.Error = NaClO_Bloomed(&T.result, strength);
   return T;
 }
 
@@ -6395,6 +6397,42 @@ NaClO_ImageResult NaClO_DissolveByMask(const NaClO_Image *I1,
   T.Error = NaClO_DissolvedByMask(&T.result, I2, mask);
   return T;
 }
+NaClO_ImageResult NaClO_WhiteNoise(NaClO_uint width, NaClO_uint height,
+                                   float ratio, bool rgb) {
+  __NaClO__makeResult(T);
+  if (width == 0 or height == 0) {
+
+    __NaClO__makeError(T, NACLO_ZERO_WIDTH_OR_HEIGHT);
+  }
+  if (ratio > 1 or ratio < 0) {
+    __NaClO__makeError(T, NACLO_OUT_OF_BOUNDS);
+  }
+  srand((unsigned int)time(NULL)); // 使用时间种子
+  NaClO_PixelType w;
+  memset(&w, 0, sizeof(w));
+  if (rgb) {
+    T = NaClO_NewBlankImage(width, height, NaClO_RGB);
+
+  } else {
+    T = NaClO_NewBlankImage(width, height, NaClO_L);
+    w.L = 1;
+  }
+  for (int x = 0; x < T.result.width; ++x) {
+    for (int y = 0; y < T.result.height; ++y) {
+      if ((NaClO_float)rand() / RAND_MAX < ratio) {
+        if (rgb) {
+          w.RGB.r = rand() % 255;
+          w.RGB.g = rand() % 255;
+          w.RGB.b = rand() % 255;
+        }
+        *NaClO_Pixel(&T.result, x, y) = w;
+      }
+    }
+  };
+  T.Error = NACLO_OK;
+  return T;
+}
+
 #ifdef __cplusplus
 }
 #endif

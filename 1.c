@@ -78,6 +78,15 @@ void PrintChannel(NaClO_Image c) {
 }
 int main() {
   {
+
+    printf("WhiteNoise\n");
+
+    NaClO_ImageResult dst = NaClO_WhiteNoise(1920,1080,0.1,false);
+    NaClO_SaveAndFree(&dst.result, "whiteNoiseL.png");
+     dst = NaClO_WhiteNoise(1920,1080,0.1,true);
+    NaClO_SaveAndFree(&dst.result, "whiteNoiseRGB.png");
+  }
+  {
     // for (int x = 0; x < 100; ++x) {
     //   float randm1 = ((float)rand() / RAND_MAX)-0.5f;
     //   printf("%f\n",randm1);
@@ -117,7 +126,7 @@ int main() {
     NaClO_SaveAndFree(&src.result, "bokeh.png");
     // NaClO_FreeImage(&src.result);
   }
-    {
+  {
     printf("GaussianBlur\n");
     NaClO_ImageResult src = NaClO_Load("color.png");
     // NaClO_ImageResult lp=NaClO_Sobel(&src.result);
