@@ -85,7 +85,17 @@ int main() {
     NaClO_SaveAndFree(&dst.result, "whiteNoiseL.png");
      dst = NaClO_WhiteNoise(1920,1080,0.1,true);
     NaClO_SaveAndFree(&dst.result, "whiteNoiseRGB.png");
+  } 
+   {
+
+    printf("Vignette\n");
+
+    NaClO_ImageResult src = NaClO_Load("color.png");
+    NaClO_ImageResult src2=NaClO_Vignette(&src.result, 32, 5);
+    NaClO_FreeImage(&src.result);
+    NaClO_SaveAndFree(&src2.result, "vignette.png");
   }
+  return 0;
   {
     // for (int x = 0; x < 100; ++x) {
     //   float randm1 = ((float)rand() / RAND_MAX)-0.5f;

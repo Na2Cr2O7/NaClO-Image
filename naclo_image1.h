@@ -4,7 +4,7 @@
  * @brief 适用于C的高易用性图像处理单文件库
  * @brief 可选择替换申请内存、释放内存函数，无符号整数和浮点数类型。
  */
-// #include <cmath>
+
 #include <ctype.h>
 #include <iso646.h>
 #include <math.h>
@@ -66,17 +66,17 @@ typedef enum {
 } NaClO_ErrorType;
 
 typedef enum {
-  NAClO_RESIZE_DEFAULT = 0, // use same filter type that easy-to-use API chooses
-  NAClO_RESIZE_BOX = 1, // A trapezoid w/1-pixel wide ramps, same result as box
-                        // for integer scale ratios
+  NAClO_RESIZE_DEFAULT = 0,       // use same filter type that easy-to-use API chooses
+  NAClO_RESIZE_BOX = 1,           // A trapezoid w/1-pixel wide ramps, same result as box
+                                  // for integer scale ratios
   NAClO_RESIZE_TRIANGLE =
-      2, // On upsampling, produces same results as bilinear texture filtering
-  NAClO_RESIZE_CUBICBSPLINE = 3, // The cubic b-spline (aka Mitchell-Netrevalli
-                                 // with B=1,C=0), gaussian-esque
-  NAClO_RESIZE_CATMULLROM = 4,   // An interpolating cubic spline
-  NAClO_RESIZE_MITCHELL = 5,     // Mitchell-Netrevalli filter with B=1/3, C=1/3
-  NAClO_RESIZE_NEAREST = 6,      // Simple point sampling
-  NAClO_RESIZE_OTHER = 7,        // User callback specified
+      2,                          // On upsampling, produces same results as bilinear texture filtering
+  NAClO_RESIZE_CUBICBSPLINE = 3,  // The cubic b-spline (aka Mitchell-Netrevalli
+                                  // with B=1,C=0), gaussian-esque
+  NAClO_RESIZE_CATMULLROM = 4,    // An interpolating cubic spline
+  NAClO_RESIZE_MITCHELL = 5,      // Mitchell-Netrevalli filter with B=1/3, C=1/3
+  NAClO_RESIZE_NEAREST = 6,       // Simple point sampling
+  NAClO_RESIZE_OTHER = 7,         // User callback specified
 } NaClO_ResizeMethod;
 
 /// @brief 颜色通道种类
@@ -183,44 +183,218 @@ typedef union {
 typedef NaClO_PixelType (*NaClO_SetPixelFunctionPointer)(NaClO_PixelType p,
                                                          NaClO_ColorMode mode);
 
+/**
+ * @brief 从文件加载图像
+ * @param filename 图像文件路径
+ * @return 图像结果结构体，包含加载的图像或错误信息
+ * @note 支持 PNG、BMP、TGA、JPG 等格式
+ * @see NaClO_FreeImage
+ */
 NaClO_ImageResult NaClO_Load(const char *filename);
+
+/**
+ * @brief 释放图像内存
+ * @param src 要释放的图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_Load
+ */
 NaClO_ErrorType NaClO_FreeImage(NaClO_Image *src);
 
+/**
+ * @brief 将图像保存到文件
+ * @param data 要保存的图像
+ * @param fileName 目标文件名（扩展名决定格式）
+ * @return 错误类型，NACLO_OK 表示成功
+ * @note 支持 PNG、BMP、TGA、JPG 格式，根据文件扩展名自动选择
+ */
 NaClO_ErrorType NaClO_Save(const NaClO_Image *data, const char *fileName);
+
+/**
+ * @brief 保存图像并释放内存
+ * @param data 要保存的图像指针
+ * @param fileName 目标文件名
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_Save
+ * @see NaClO_FreeImage
+ */
 NaClO_ErrorType NaClO_SaveAndFree(NaClO_Image *data, const char *fileName);
 
+/**
+ * @brief 调整图像大小（使用默认插值方法）
+ * @param data 原始图像
+ * @param w 目标宽度
+ * @param h 目标高度
+ * @return 新的调整大小后的图像结果
+ * @see NaClO_Resize2
+ */
 NaClO_ImageResult NaClO_Resize(const NaClO_Image *data, NaClO_uint w,
                                NaClO_uint h);
+
+/**
+ * @brief 调整图像大小（指定插值方法）
+ * @param data 原始图像
+ * @param w 目标宽度
+ * @param h 目标高度
+ * @param method 插值方法，参见 NaClO_ResizeMethod
+ * @return 新的调整大小后的图像结果
+ * @see NaClO_ResizeMethod
+ */
 NaClO_ImageResult NaClO_Resize2(const NaClO_Image *data, NaClO_uint w,
                                 NaClO_uint h, NaClO_ResizeMethod method);
+
+/**
+ * @brief 原地调整图像大小（使用默认插值方法）
+ * @param data 图像指针
+ * @param w 目标宽度
+ * @param h 目标高度
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_Resized2
+ */
 NaClO_ErrorType NaClO_Resized(NaClO_Image *data, NaClO_uint w, NaClO_uint h);
+
+/**
+ * @brief 原地调整图像大小（指定插值方法）
+ * @param data 图像指针
+ * @param w 目标宽度
+ * @param h 目标高度
+ * @param method 插值方法
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Resized2(NaClO_Image *data, NaClO_uint w, NaClO_uint h,
                                NaClO_ResizeMethod method);
+
+/**
+ * @brief 获取像素指针（无边界检查）
+ * @param data 图像
+ * @param x X坐标
+ * @param y Y坐标
+ * @return 像素指针
+ * @warning 此函数不进行边界检查，请确保坐标有效
+ * @see NaClO_GetPixel
+ */
 NaClO_PixelType *NaClO_Pixel(const NaClO_Image *data, const NaClO_uint x,
                              const NaClO_uint y);
+
+/**
+ * @brief 获取像素值（带边界检查）
+ * @param data 图像
+ * @param x X坐标
+ * @param y Y坐标
+ * @return 像素结果结构体，包含像素值或错误信息
+ * @see NaClO_Pixel
+ * @see NaClO_PutPixel
+ */
 NaClO_PixelResult NaClO_GetPixel(const NaClO_Image *data, const NaClO_uint x,
                                  const NaClO_uint y);
+
+/**
+ * @brief 设置像素值
+ * @param data 图像指针
+ * @param x X坐标
+ * @param y Y坐标
+ * @param target 目标像素值
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_GetPixel
+ */
 NaClO_ErrorType NaClO_PutPixel(NaClO_Image *data, NaClO_uint x, NaClO_uint y,
                                NaClO_PixelType target);
 
+/**
+ * @brief 裁剪图像
+ * @param data 原始图像
+ * @param x 裁剪区域起始X坐标
+ * @param y 裁剪区域起始Y坐标
+ * @param w 裁剪区域宽度
+ * @param h 裁剪区域高度
+ * @return 裁剪后的图像结果
+ * @see NaClO_Cropped
+ */
 NaClO_ImageResult NaClO_Crop(const NaClO_Image *data, NaClO_uint x,
                              NaClO_uint y, NaClO_uint w, NaClO_uint h);
+
+/**
+ * @brief 原地裁剪图像
+ * @param data 图像指针
+ * @param x 裁剪区域起始X坐标
+ * @param y 裁剪区域起始Y坐标
+ * @param w 裁剪区域宽度
+ * @param h 裁剪区域高度
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Cropped(NaClO_Image *data, NaClO_uint x, NaClO_uint y,
                               NaClO_uint w, NaClO_uint h);
 
+/**
+ * @brief 复制图像
+ * @param data 原始图像
+ * @return 复制后的图像结果
+ */
 NaClO_ImageResult NaClO_CopyImage(const NaClO_Image *data);
 
+/**
+ * @brief 转换图像颜色模式
+ * @param data 原始图像
+ * @param mode 目标颜色模式
+ * @return 转换后的图像结果
+ * @see NaClO_Convert
+ * @see NaClO_ColorMode
+ */
 NaClO_ImageResult NaClO_ConvertE(const NaClO_Image *data, NaClO_ColorMode mode);
+
+/**
+ * @brief 转换图像颜色模式（字符串参数）
+ * @param data 原始图像
+ * @param mode_str 目标颜色模式字符串（"rgb"、"rgba"、"l"、"1"）
+ * @return 转换后的图像结果
+ * @see NaClO_ConvertE
+ */
 NaClO_ImageResult NaClO_Convert(const NaClO_Image *data, const char *mode_str);
+
+/**
+ * @brief 原地转换图像颜色模式（字符串参数）
+ * @param data 图像指针
+ * @param mode_str 目标颜色模式字符串
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Converted(NaClO_Image *data, const char *mode_str);
+
+/**
+ * @brief 原地转换图像颜色模式
+ * @param data 图像指针
+ * @param mode 目标颜色模式
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_ConvertedE(NaClO_Image *data, NaClO_ColorMode mode);
 
+/**
+ * @brief 创建新图像
+ * @param w 图像宽度
+ * @param h 图像高度
+ * @param mode 颜色模式
+ * @param fillColor 填充颜色
+ * @return 新创建的图像结果
+ */
 NaClO_ImageResult NaClO_NewImage(NaClO_uint w, NaClO_uint h,
                                  NaClO_ColorMode mode,
                                  NaClO_PixelType fillColor);
 
+/**
+ * @brief 翻转图像
+ * @param data 原始图像
+ * @param direction 翻转方向
+ * @return 翻转后的图像结果
+ * @see NaClO_Flipped
+ * @see NaClO_FlipDirection
+ */
 NaClO_ImageResult NaClO_Flip(const NaClO_Image *data,
                              NaClO_FlipDirection direction);
+
+/**
+ * @brief 原地翻转图像
+ * @param data 图像指针
+ * @param direction 翻转方向
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Flipped(NaClO_Image *data, NaClO_FlipDirection direction);
 #define NaClO_Luminance2(color)                                                \
   (0.299f * color.r + 0.587f * color.g + 0.114f * color.b)
@@ -238,15 +412,59 @@ NaClO_ErrorType NaClO_Flipped(NaClO_Image *data, NaClO_FlipDirection direction);
 NaClO_ImageResult NaClO_FlipAt(const NaClO_Image *data, NaClO_uint pos,
                                NaClO_FlipDirection direction);
 
+/**
+ * @brief 将图像粘贴到画布上
+ * @param canva 目标画布图像
+ * @param object 要粘贴的图像
+ * @param w 粘贴位置的X坐标
+ * @param h 粘贴位置的Y坐标
+ * @return 新的图像结果
+ * @see NaClO_Pasted
+ */
 NaClO_ImageResult NaClO_Paste(NaClO_Image *canva, const NaClO_Image *object,
                               NaClO_uint w, NaClO_uint h);
+
+/**
+ * @brief 原地将图像粘贴到画布上
+ * @param canva 目标画布图像指针
+ * @param object 要粘贴的图像
+ * @param w 粘贴位置的X坐标
+ * @param h 粘贴位置的Y坐标
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Pasted(NaClO_Image *canva, const NaClO_Image *object,
                              NaClO_uint w, NaClO_uint h);
 
+/**
+ * @brief 将RGB颜色转换为HSV颜色
+ * @param src RGB颜色结构体
+ * @return HSV颜色结构体
+ * @see NaClO_GetRGB
+ */
 NaClO_HSV NaClO_GetHSV(NaClO_ColorModeRGB src);
+
+/**
+ * @brief 将RGBA颜色转换为HSV颜色
+ * @param src RGBA颜色结构体
+ * @return HSV颜色结构体
+ * @see NaClO_GetRGB
+ */
 NaClO_HSV NaClO_GetHSVRGBA(NaClO_ColorModeRGBA src);
+
+/**
+ * @brief 将HSV颜色转换为RGB颜色
+ * @param src HSV颜色结构体
+ * @return RGB颜色结构体
+ * @see NaClO_GetHSV
+ */
 NaClO_ColorModeRGB NaClO_GetRGB(NaClO_HSV src);
 
+/**
+ * @brief 遍历图像所有像素并应用函数
+ * @param src 图像指针
+ * @param f 像素处理函数指针
+ * @see NaClO_SetPixelFunctionPointer
+ */
 void NaClO_EnumeratePixel(NaClO_Image *src, NaClO_SetPixelFunctionPointer f);
 #define NaClO_EnumeratePixel2(src, f)                                          \
   for (int x = 0; x < src.width; ++x) {                                        \
@@ -260,56 +478,276 @@ void NaClO_EnumeratePixel(NaClO_Image *src, NaClO_SetPixelFunctionPointer f);
       f;                                                                       \
     }                                                                          \
   }
+/**
+ * @brief 创建新矩阵
+ * @param x 矩阵宽度（列数）
+ * @param y 矩阵高度（行数）
+ * @return 矩阵结果结构体
+ * @see NaClO_FreeMatrix
+ */
 NaClO_MatrixResult NaClO_NewMatrix(uint8_t x, uint8_t y);
+
+/**
+ * @brief 释放矩阵内存
+ * @param matrix 矩阵指针
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_NewMatrix
+ */
 NaClO_ErrorType NaClO_FreeMatrix(NaClO_Matrix *matrix);
+
+/**
+ * @brief 获取矩阵元素指针（行优先，YX顺序）
+ * @param matrix 矩阵
+ * @param row 行索引
+ * @param col 列索引
+ * @return 元素指针
+ */
 NaClO_float *NaClO_MatrixElementYX(const NaClO_Matrix *matrix, uint8_t row,
                                    uint8_t col);
+
+/**
+ * @brief 获取矩阵元素指针（行优先，YX顺序，带边界检查）
+ * @param matrix 矩阵
+ * @param row 行索引
+ * @param col 列索引
+ * @return 元素指针
+ */
 NaClO_float *NaClO_MatrixElementYX1(const NaClO_Matrix *matrix, uint8_t row,
                                     uint8_t col);
+
+/**
+ * @brief 获取矩阵元素指针（列优先，XY顺序）
+ * @param matrix 矩阵
+ * @param col 列索引
+ * @param row 行索引
+ * @return 元素指针
+ */
 NaClO_float *NaClO_MatrixElement(const NaClO_Matrix *matrix, uint8_t col,
                                  uint8_t row);
+
+/**
+ * @brief 获取矩阵元素指针（列优先，XY顺序，带边界检查）
+ * @param matrix 矩阵
+ * @param col 列索引
+ * @param row 行索引
+ * @return 元素指针
+ */
 NaClO_float *NaClO_MatrixElement1(const NaClO_Matrix *matrix, uint8_t col,
                                   uint8_t row);
 
+/**
+ * @brief 复制矩阵
+ * @param matrix 原始矩阵
+ * @return 复制后的矩阵结果
+ */
 NaClO_MatrixResult NaClO_CopyMatrix(const NaClO_Matrix *matrix);
+
+/**
+ * @brief 转置矩阵
+ * @param matrix 原始矩阵
+ * @return 转置后的矩阵结果
+ * @see NaClO_TransposedMatrix
+ */
 NaClO_MatrixResult NaClO_TransposeMatrix(const NaClO_Matrix *matrix);
+
+/**
+ * @brief 原地转置矩阵
+ * @param matrix 矩阵指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_TransposedMatrix(NaClO_Matrix *matrix);
+
+/**
+ * @brief 创建单位矩阵
+ * @param w 矩阵大小（宽高相等）
+ * @return 单位矩阵结果
+ */
 NaClO_MatrixResult NaClO_NewIdentityMatrix(uint8_t w);
+
+/**
+ * @brief 获取行简化阶梯形矩阵
+ * @param matrix 原始矩阵
+ * @return 行简化阶梯形矩阵结果
+ * @see NaClO_RowReducedEchelonMatrix
+ */
 NaClO_MatrixResult NaClO_GetRowReducedEchelonMatrix(const NaClO_Matrix *matrix);
+
+/**
+ * @brief 原地将矩阵转换为行简化阶梯形
+ * @param matrix 矩阵指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_RowReducedEchelonMatrix(NaClO_Matrix *matrix);
+
+/**
+ * @brief 矩阵求逆
+ * @param matrix 原始矩阵
+ * @return 逆矩阵结果
+ */
 NaClO_MatrixResult NaClO_MatrixInversion(const NaClO_Matrix *matrix);
+
+/**
+ * @brief 矩阵乘法
+ * @param A 矩阵A
+ * @param B 矩阵B
+ * @return 乘积矩阵结果
+ */
 NaClO_MatrixResult NaClO_MatrixMultiply(const NaClO_Matrix *A,
                                         const NaClO_Matrix *B);
 
+/**
+ * @brief 矩阵点积（逐元素乘法）
+ * @param matrix1 矩阵1
+ * @param matrix2 矩阵2
+ * @return 点积矩阵结果
+ */
 NaClO_MatrixResult NaClO_DotProduct(const NaClO_Matrix *matrix1,
                                     const NaClO_Matrix *matrix2);
 
+/**
+ * @brief 获取2D旋转矩阵
+ * @param centerX 旋转中心X坐标
+ * @param centerY 旋转中心Y坐标
+ * @param angleDeg 旋转角度（度）
+ * @param scale 缩放因子
+ * @return 2x3旋转矩阵结果
+ * @see NaClO_WarpAffine
+ */
 NaClO_MatrixResult NaClO_GetRotationMatrix2D(uint8_t centerX, uint8_t centerY,
                                              NaClO_float angleDeg,
                                              NaClO_float scale);
+
+/**
+ * @brief 对图像进行仿射变换
+ * @param data 原始图像
+ * @param M 变换矩阵
+ * @return 变换后的图像结果
+ * @see NaClO_WarpedAffine
+ */
 NaClO_ImageResult NaClO_WarpAffine(const NaClO_Image *data,
                                    const NaClO_Matrix *M);
+
+/**
+ * @brief 原地对图像进行仿射变换
+ * @param data 图像指针
+ * @param M 变换矩阵
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_WarpedAffine(NaClO_Image *data, const NaClO_Matrix *M);
 
+/**
+ * @brief 扩展图像边界
+ * @param data 原始图像
+ * @param newWidth 新宽度
+ * @param newHeight 新高度
+ * @param expandMode 扩展模式
+ * @return 扩展后的图像结果
+ * @see NaClO_Expanded
+ * @see NaClO_ExpandMode
+ */
 NaClO_ImageResult NaClO_Expand(const NaClO_Image *data, NaClO_uint newWidth,
                                NaClO_uint newHeight,
                                NaClO_ExpandMode expandMode);
+
+/**
+ * @brief 原地扩展图像边界
+ * @param data 图像指针
+ * @param newWidth 新宽度
+ * @param newHeight 新高度
+ * @param expandMode 扩展模式
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Expanded(NaClO_Image *data, NaClO_uint newWidth,
                                NaClO_uint newHeight,
                                NaClO_ExpandMode expandMode);
 
+/**
+ * @brief 旋转图像（绕中心）
+ * @param data 原始图像
+ * @param angleDeg 旋转角度（度）
+ * @return 旋转后的图像结果
+ * @see NaClO_Rotated
+ */
 NaClO_ImageResult NaClO_Rotate(const NaClO_Image *data, NaClO_float angleDeg);
+
+/**
+ * @brief 原地旋转图像（绕中心）
+ * @param data 图像指针
+ * @param angleDeg 旋转角度（度）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Rotated(NaClO_Image *data, NaClO_float angleDeg);
+
+/**
+ * @brief 旋转图像（绕指定点）
+ * @param data 原始图像
+ * @param angleDeg 旋转角度（度）
+ * @param x 旋转中心X坐标
+ * @param y 旋转中心Y坐标
+ * @return 旋转后的图像结果
+ * @see NaClO_RotatedAt
+ */
 NaClO_ImageResult NaClO_RotateAt(const NaClO_Image *data, NaClO_float angleDeg,
                                  NaClO_uint x, NaClO_uint y);
+
+/**
+ * @brief 原地旋转图像（绕指定点）
+ * @param data 图像指针
+ * @param angleDeg 旋转角度（度）
+ * @param x 旋转中心X坐标
+ * @param y 旋转中心Y坐标
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_RotatedAt(NaClO_Image *data, NaClO_float angleDeg,
                                 NaClO_uint x, NaClO_uint y);
 
+/**
+ * @brief 应用伽马校正
+ * @param data 原始图像
+ * @param gamma 伽马值
+ * @return 校正后的图像结果
+ * @see NaClO_SetGamma
+ */
 NaClO_ImageResult NaClO_Gamma(const NaClO_Image *data, NaClO_float gamma);
+
+/**
+ * @brief 原地应用伽马校正
+ * @param data 图像指针
+ * @param gamma 伽马值
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetGamma(NaClO_Image *data, NaClO_float gamma);
 
+/**
+ * @brief 缩放图像亮度
+ * @param data 原始图像
+ * @param factor 缩放因子
+ * @return 缩放后的图像结果
+ */
 NaClO_ImageResult NaClO_Scale(const NaClO_Image *data, NaClO_float factor);
 
+/**
+ * @brief 透视变换
+ * @param data 原始图像
+ * @param x1 原始四边形顶点1 X坐标
+ * @param y1 原始四边形顶点1 Y坐标
+ * @param x2 原始四边形顶点2 X坐标
+ * @param y2 原始四边形顶点2 Y坐标
+ * @param x3 原始四边形顶点3 X坐标
+ * @param y3 原始四边形顶点3 Y坐标
+ * @param x4 原始四边形顶点4 X坐标
+ * @param y4 原始四边形顶点4 Y坐标
+ * @param x5 目标四边形顶点1 X坐标
+ * @param y5 目标四边形顶点1 Y坐标
+ * @param x6 目标四边形顶点2 X坐标
+ * @param y6 目标四边形顶点2 Y坐标
+ * @param x7 目标四边形顶点3 X坐标
+ * @param y7 目标四边形顶点3 Y坐标
+ * @param x8 目标四边形顶点4 X坐标
+ * @param y8 目标四边形顶点4 Y坐标
+ * @return 变换后的图像结果
+ * @see NaClO_SetPerspective
+ */
 NaClO_ImageResult NaClO_Perspective(const NaClO_Image *data, NaClO_uint x1,
                                     NaClO_uint y1, NaClO_uint x2, NaClO_uint y2,
                                     NaClO_uint x3, NaClO_uint y3, NaClO_uint x4,
@@ -318,6 +756,28 @@ NaClO_ImageResult NaClO_Perspective(const NaClO_Image *data, NaClO_uint x1,
                                     NaClO_uint x5, NaClO_uint y5, NaClO_uint x6,
                                     NaClO_uint y6, NaClO_uint x7, NaClO_uint y7,
                                     NaClO_uint x8, NaClO_uint y8);
+
+/**
+ * @brief 原地透视变换
+ * @param data 图像指针
+ * @param x1 原始四边形顶点1 X坐标
+ * @param y1 原始四边形顶点1 Y坐标
+ * @param x2 原始四边形顶点2 X坐标
+ * @param y2 原始四边形顶点2 Y坐标
+ * @param x3 原始四边形顶点3 X坐标
+ * @param y3 原始四边形顶点3 Y坐标
+ * @param x4 原始四边形顶点4 X坐标
+ * @param y4 原始四边形顶点4 Y坐标
+ * @param x5 目标四边形顶点1 X坐标
+ * @param y5 目标四边形顶点1 Y坐标
+ * @param x6 目标四边形顶点2 X坐标
+ * @param y6 目标四边形顶点2 Y坐标
+ * @param x7 目标四边形顶点3 X坐标
+ * @param y7 目标四边形顶点3 Y坐标
+ * @param x8 目标四边形顶点4 X坐标
+ * @param y8 目标四边形顶点4 Y坐标
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetPerspective(
     NaClO_Image *data, NaClO_uint x1, NaClO_uint y1, NaClO_uint x2,
     NaClO_uint y2, NaClO_uint x3, NaClO_uint y3, NaClO_uint x4, NaClO_uint y4,
@@ -325,114 +785,593 @@ NaClO_ErrorType NaClO_SetPerspective(
     NaClO_uint x5, NaClO_uint y5, NaClO_uint x6, NaClO_uint y6, NaClO_uint x7,
     NaClO_uint y7, NaClO_uint x8, NaClO_uint y8);
 
+/**
+ * @brief 对图像进行卷积
+ * @param data 原始图像
+ * @param kernel 卷积核
+ * @param stride 步长
+ * @param padding 填充
+ * @return 卷积后的图像结果
+ * @see NaClO_Convoluted
+ */
 NaClO_ImageResult NaClO_Convolute(const NaClO_Image *data, NaClO_Matrix kernel,
                                   uint8_t stride, uint8_t padding);
+
+/**
+ * @brief 原地对图像进行卷积
+ * @param data 图像指针
+ * @param kernel 卷积核
+ * @param stride 步长
+ * @param padding 填充
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Convoluted(NaClO_Image *data, NaClO_Matrix kernel,
                                  uint8_t stride, uint8_t padding);
 
+/**
+ * @brief 应用拉普拉斯算子进行边缘检测
+ * @param data 原始图像
+ * @return 边缘检测后的图像结果
+ * @see NaClO_SetLaplace
+ */
 NaClO_ImageResult NaClO_Laplace(const NaClO_Image *data);
+
+/**
+ * @brief 原地应用拉普拉斯算子进行边缘检测
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetLaplace(NaClO_Image *data);
 
+/**
+ * @brief 应用Sobel算子进行边缘检测
+ * @param data 原始图像
+ * @return 边缘检测后的图像结果
+ * @see NaClO_SetSobel
+ */
 NaClO_ImageResult NaClO_Sobel(const NaClO_Image *data);
+
+/**
+ * @brief 原地应用Sobel算子进行边缘检测
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetSobel(NaClO_Image *data);
 
+/**
+ * @brief 应用Roberts算子进行边缘检测
+ * @param data 原始图像
+ * @return 边缘检测后的图像结果
+ * @see NaClO_SetRoberts
+ */
 NaClO_ImageResult NaClO_Roberts(const NaClO_Image *data);
+
+/**
+ * @brief 原地应用Roberts算子进行边缘检测
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetRoberts(NaClO_Image *data);
 
+/**
+ * @brief 应用Prewitt算子进行边缘检测
+ * @param data 原始图像
+ * @return 边缘检测后的图像结果
+ * @see NaClO_SetPrewitt
+ */
 NaClO_ImageResult NaClO_Prewitt(const NaClO_Image *data);
+
+/**
+ * @brief 原地应用Prewitt算子进行边缘检测
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetPrewitt(NaClO_Image *data);
 
+/**
+ * @brief 应用Canny边缘检测算法
+ * @param data 原始图像
+ * @param lowThreshold 低阈值
+ * @param highThreshold 高阈值
+ * @return 边缘检测后的图像结果
+ * @see NaClO_SetCanny
+ */
 NaClO_ImageResult NaClO_Canny(const NaClO_Image *data, NaClO_float lowThreshold,
                               NaClO_float highThreshold);
+
+/**
+ * @brief 原地应用Canny边缘检测算法
+ * @param data 图像指针
+ * @param lowThreshold 低阈值
+ * @param highThreshold 高阈值
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetCanny(NaClO_Image *data, NaClO_float lowThreshold,
                                NaClO_float highThreshold);
 
+/**
+ * @brief 应用均值模糊
+ * @param data 原始图像
+ * @param strength 模糊强度（核大小）
+ * @return 模糊后的图像结果
+ * @see NaClO_AvgBlurred
+ */
 NaClO_ImageResult NaClO_AvgBlur(const NaClO_Image *data, NaClO_uint strength);
+
+/**
+ * @brief 原地应用均值模糊
+ * @param data 图像指针
+ * @param strength 模糊强度（核大小）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_AvgBlurred(NaClO_Image *data, NaClO_uint strength);
 
+/**
+ * @brief 应用中值模糊
+ * @param data 原始图像
+ * @param strength 模糊强度（核大小）
+ * @return 模糊后的图像结果
+ * @see NaClO_MedianBlurred
+ */
 NaClO_ImageResult NaClO_MedianBlur(const NaClO_Image *data,
                                    NaClO_uint strength);
+
+/**
+ * @brief 原地应用中值模糊
+ * @param data 图像指针
+ * @param strength 模糊强度（核大小）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_MedianBlurred(NaClO_Image *data, NaClO_uint strength);
 
+/**
+ * @brief 应用高斯模糊
+ * @param data 原始图像
+ * @param strength 模糊强度（核大小）
+ * @return 模糊后的图像结果
+ * @see NaClO_GaussianBlurred
+ */
 NaClO_ImageResult NaClO_GaussianBlur(const NaClO_Image *data,
                                      NaClO_uint strength);
+
+/**
+ * @brief 原地应用高斯模糊
+ * @param data 图像指针
+ * @param strength 模糊强度（核大小）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_GaussianBlurred(NaClO_Image *data, NaClO_uint strength);
 
+/**
+ * @brief 应用模糊（默认方法）
+ * @param data 原始图像
+ * @param strength 模糊强度（核大小）
+ * @return 模糊后的图像结果
+ * @see NaClO_Blurred
+ */
 NaClO_ImageResult NaClO_Blur(const NaClO_Image *data, NaClO_uint strength);
+
+/**
+ * @brief 原地应用模糊
+ * @param data 图像指针
+ * @param strength 模糊强度（核大小）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Blurred(NaClO_Image *data, NaClO_uint strength);
 
+/**
+ * @brief 调整图像的色相、饱和度和明度
+ * @param data 原始图像
+ * @param hue 色相偏移量
+ * @param saturation 饱和度调整量
+ * @param value 明度调整量
+ * @return 调整后的图像结果
+ * @see NaClO_SetHueSaturationValue
+ */
 NaClO_ImageResult NaClO_HueSaturationValue(const NaClO_Image *data,
                                            NaClO_float hue,
                                            NaClO_float saturation,
                                            NaClO_float value);
+
+/**
+ * @brief 原地调整图像的色相、饱和度和明度
+ * @param data 图像指针
+ * @param hue 色相偏移量
+ * @param saturation 饱和度调整量
+ * @param value 明度调整量
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_SetHueSaturationValue(NaClO_Image *data, NaClO_float hue,
                                             NaClO_float saturation,
                                             NaClO_float value);
+
+/**
+ * @brief 计算图像的梯度直方图
+ * @param data 图像
+ * @param outHistogram 输出直方图数组（256个元素）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_GradientHistogram(const NaClO_Image *data,
                                         NaClO_uint *outHistogram);
+
+/**
+ * @brief 计算图像的RGB直方图
+ * @param data 图像
+ * @param outRHistogram 输出红色通道直方图数组（256个元素）
+ * @param outGHistogram 输出绿色通道直方图数组（256个元素）
+ * @param outBHistogram 输出蓝色通道直方图数组（256个元素）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_RGBHistogram(const NaClO_Image *data,
                                    NaClO_uint *outRHistogram,
                                    NaClO_uint *outGHistogram,
                                    NaClO_uint *outBHistogram
 
 );
+/**
+ * @brief 应用直方图均衡化
+ * @param data 原始图像
+ * @return 均衡化后的图像结果
+ * @see NaClO_HistogramEqualized
+ */
 NaClO_ImageResult NaClO_HistogramEqualization(const NaClO_Image *data);
+
+/**
+ * @brief 原地应用直方图均衡化
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_HistogramEqualized(NaClO_Image *data);
+
+/**
+ * @brief 原地应用预乘Alpha
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_AlphaPremultiplication
+ */
 NaClO_ErrorType NaClO_PremultipliedAlpha(NaClO_Image *data);
+
+/**
+ * @brief 应用预乘Alpha
+ * @param data 原始图像
+ * @return 处理后的图像结果
+ */
 NaClO_ImageResult NaClO_AlphaPremultiplication(const NaClO_Image *data);
+
+/**
+ * @brief 锐化图像
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
+NaClO_ImageResult NaClO_Sharpen(NaClO_Image *data);
+/**
+ * @brief 原地锐化图像
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Sharpened(NaClO_Image *data);
+
+/**
+ * @brief 原地反转图像颜色
+ * @param data 图像指针
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Reversed(NaClO_Image *data);
-NaClO_ImageResult NaClO_ReverseImage(const NaClO_Image *data);
+
+/**
+ * @brief 反转图像颜色
+ * @param data 原始图像
+ * @return 反转后的图像结果
+ * @see NaClO_Reversed
+ */
+NaClO_ImageResult NaClO_Reverse(const NaClO_Image *data);
+
+/**
+ * @brief 混合两个像素
+ * @param p1 像素1
+ * @param p2 像素2
+ * @param ratio 混合比例（0.0-1.0）
+ * @param mode 颜色模式
+ * @return 混合后的像素
+ */
 NaClO_PixelType NaClO_BlendPixel(const NaClO_PixelType p1,
                                  const NaClO_PixelType p2, NaClO_float ratio,
                                  NaClO_ColorMode mode);
+
+/**
+ * @brief 原地混合两幅图像
+ * @param I1 目标图像指针
+ * @param I2 源图像
+ * @param ratio 混合比例（0.0-1.0）
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_Blend
+ */
 NaClO_ErrorType NaClO_Blended(NaClO_Image *I1, const NaClO_Image *I2,
                               NaClO_float ratio);
+
+/**
+ * @brief 混合两幅图像
+ * @param I1 图像1
+ * @param I2 图像2
+ * @param ratio 混合比例（0.0-1.0）
+ * @return 混合后的图像结果
+ * @see NaClO_Blended
+ */
 NaClO_ImageResult NaClO_Blend(const NaClO_Image *I1, const NaClO_Image *I2,
                               NaClO_float ratio);
+
+/**
+ * @brief 原地溶解混合两幅图像
+ * @param I1 目标图像指针
+ * @param I2 源图像
+ * @param ratio 混合比例
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_Dissolve
+ */
 NaClO_ErrorType NaClO_Dissolved(NaClO_Image *I1, const NaClO_Image *I2,
                                 NaClO_float ratio);
+
+/**
+ * @brief 溶解混合两幅图像
+ * @param I1 图像1
+ * @param I2 图像2
+ * @param ratio 混合比例
+ * @return 混合后的图像结果
+ */
 NaClO_ImageResult NaClO_Dissolve(const NaClO_Image *I1, const NaClO_Image *I2,
                                  NaClO_float ratio);
+
+/**
+ * @brief 变亮混合两幅图像（取较亮像素）
+ * @param I1 图像1
+ * @param I2 图像2
+ * @return 混合后的图像结果
+ */
 NaClO_ImageResult NaClO_Lighten(const NaClO_Image *I1, const NaClO_Image *I2);
+
+/**
+ * @brief 原地变暗混合两幅图像
+ * @param I1 目标图像指针
+ * @param I2 源图像
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Darkened(NaClO_Image *I1, const NaClO_Image *I2);
+
+/**
+ * @brief 变暗混合两幅图像（取较暗像素）
+ * @param I1 图像1
+ * @param I2 图像2
+ * @return 混合后的图像结果
+ */
 NaClO_ImageResult NaClO_Darken(const NaClO_Image *I1, const NaClO_Image *I2);
+
+/**
+ * @brief 原地正片叠底混合两幅图像
+ * @param I1 目标图像指针
+ * @param I2 源图像
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Multiplied(NaClO_Image *I1, const NaClO_Image *I2);
+
+/**
+ * @brief 正片叠底混合两幅图像
+ * @param I1 图像1
+ * @param I2 图像2
+ * @return 混合后的图像结果
+ */
 NaClO_ImageResult NaClO_Multiply(const NaClO_Image *I1, const NaClO_Image *I2);
+
+/**
+ * @brief 绘制抗锯齿圆形
+ * @param canva 画布图像指针
+ * @param x 圆心X坐标
+ * @param y 圆心Y坐标
+ * @param color 颜色
+ * @param radius 半径
+ * @param filled 是否填充
+ * @param radius2 内圆半径（用于绘制圆环）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_DrawCircleAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                                    NaClO_PixelType color, NaClO_uint radius,
                                    bool filled, NaClO_uint radius2);
+
+/**
+ * @brief 绘制圆形
+ * @param canva 画布图像指针
+ * @param x 圆心X坐标
+ * @param y 圆心Y坐标
+ * @param color 颜色
+ * @param radius 半径
+ * @param filled 是否填充
+ * @param radius2 内圆半径（用于绘制圆环）
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_DrawCircle(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                                  NaClO_PixelType color, NaClO_uint radius,
                                  bool filled, NaClO_uint radius2);
+
+/**
+ * @brief 绘制抗锯齿椭圆
+ * @param canva 画布图像指针
+ * @param x 椭圆中心X坐标
+ * @param y 椭圆中心Y坐标
+ * @param a 长轴半径
+ * @param b 短轴半径
+ * @param color 颜色
+ * @param filled 是否填充
+ * @param offset 偏移量
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_DrawEclipseAA(NaClO_Image *canva, NaClO_int x,
                                     NaClO_int y, NaClO_float a, NaClO_float b,
                                     NaClO_PixelType color, bool filled,
                                     NaClO_uint offset);
+
+/**
+ * @brief 绘制抗锯齿点
+ * @param canva 画布图像指针
+ * @param x X坐标
+ * @param y Y坐标
+ * @param color 颜色
+ * @param radius 点半径
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_DotAA(NaClO_Image *canva, NaClO_int x, NaClO_int y,
                             NaClO_PixelType color, NaClO_uint radius);
+
+/**
+ * @brief 绘制抗锯齿直线
+ * @param canva 画布图像指针
+ * @param x1 起点X坐标
+ * @param y1 起点Y坐标
+ * @param x2 终点X坐标
+ * @param y2 终点Y坐标
+ * @param color 颜色
+ * @param radius 线宽
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_DrawLineAA(NaClO_Image *canva, NaClO_int x1, NaClO_int y1,
                                  NaClO_int x2, NaClO_int y2,
                                  NaClO_PixelType color, NaClO_uint radius);
+
+/**
+ * @brief 绘制抗锯齿矩形
+ * @param canva 画布图像指针
+ * @param x1 左上角X坐标
+ * @param y1 左上角Y坐标
+ * @param x2 右下角X坐标
+ * @param y2 右下角Y坐标
+ * @param color 颜色
+ * @param radius 边框宽度
+ * @param filled 是否填充
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_DrawRectangleAA(NaClO_Image *canva, NaClO_int x1,
                                       NaClO_int y1, NaClO_int x2, NaClO_int y2,
                                       NaClO_PixelType color, NaClO_uint radius,
                                       bool filled);
+
+/**
+ * @brief 原地使用蒙版混合图像
+ * @param I1 目标图像指针
+ * @param I2 源图像
+ * @param mask 蒙版图像
+ * @return 错误类型，NACLO_OK 表示成功
+ * @see NaClO_BlendByMask
+ */
 NaClO_ErrorType NaClO_BlendedByMask(NaClO_Image *I1, const NaClO_Image *I2,
                                     const NaClO_Image *mask);
+
+/**
+ * @brief 在指定点应用径向模糊
+ * @param data 原始图像
+ * @param cx 中心X坐标
+ * @param cy 中心Y坐标
+ * @param strength 模糊强度
+ * @return 模糊后的图像结果
+ * @see NaClO_RadicalBlurredAt
+ */
 NaClO_ImageResult NaClO_RadicalBlurAt(const NaClO_Image *data, NaClO_int cx,
                                       NaClO_int cy, NaClO_float strength);
+
+/**
+ * @brief 原地在指定点应用径向模糊
+ * @param data 图像指针
+ * @param cx 中心X坐标
+ * @param cy 中心Y坐标
+ * @param strength 模糊强度
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_RadicalBlurredAt(NaClO_Image *data, NaClO_int cx,
                                        NaClO_int cy, NaClO_float strength);
+
+/**
+ * @brief 采样图像
+ * @param data 原始图像
+ * @param ratio 采样比例
+ * @return 采样后的图像结果
+ */
 NaClO_ImageResult NaClO_Sample(const NaClO_Image *data, NaClO_float ratio);
+
+/**
+ * @brief 原地应用泛光效果
+ * @param data 图像指针
+ * @param strength 泛光强度
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Bloomed(NaClO_Image *data, NaClO_uint strength);
+
+/**
+ * @brief 应用泛光效果
+ * @param data 原始图像
+ * @param strength 泛光强度
+ * @return 泛光后的图像结果
+ */
 NaClO_ImageResult NaClO_Bloom(const NaClO_Image *data, NaClO_uint strength);
+
+/**
+ * @brief 生成白噪声图像
+ * @param width 图像宽度
+ * @param height 图像高度
+ * @param ratio 噪声比例
+ * @param rgb 是否为RGB噪声
+ * @return 噪声图像结果
+ */
 NaClO_ImageResult NaClO_WhiteNoise(NaClO_uint width, NaClO_uint height,
                                    float ratio, bool rgb);
+
+/**
+ * @brief 使用蒙版混合图像
+ * @param I1 图像1
+ * @param I2 图像2
+ * @param mask 蒙版图像
+ * @return 混合后的图像结果
+ */
+NaClO_ImageResult NaClO_BlendByMask(const NaClO_Image *I1,
+                                    const NaClO_Image *I2,
+                                    const NaClO_Image *mask);
+
+/**
+ * @brief 生成噪声图像
+ * @param width 图像宽度
+ * @param height 图像高度
+ * @param ratio 噪声比例
+ * @param rgb 是否为RGB噪声
+ * @return 噪声图像结果
+ */
+NaClO_ImageResult NaClO_Noise(NaClO_uint width, NaClO_uint height, float ratio,
+                              bool rgb);
 #define NaClO_Burnt(I1, I2) NaClO_Burned(I1, I2)
+
+/**
+ * @brief 原地应用颜色加深混合
+ * @param I1 目标图像指针
+ * @param I2 源图像
+ * @return 错误类型，NACLO_OK 表示成功
+ */
 NaClO_ErrorType NaClO_Burned(NaClO_Image *I1, const NaClO_Image *I2);
+
+/**
+ * @brief 从结果中提取值（带断言检查）
+ * @param r 结果结构体
+ * @return 结果值
+ * @note 如果结果包含错误，程序会触发断言失败
+ */
 #define NaClO_Unwrap(r) (assert((r).Error == NACLO_OK), (r).result)
+
+/**
+ * @brief 边缘检测宏（使用Sobel算子）
+ * @param data 图像
+ * @return 边缘检测后的图像
+ */
 #define NaClO_EdgeDetect(data) NaClO_Sobel(data)
+
+/**
+ * @brief 创建直方图数组的宏
+ * @param name 直方图数组名称
+ * @note 创建一个256元素的无符号整数数组
+ */
 #define NaClO_MakeHistogram(name) NaClO_uint name[256]
 
 #define NACLO_IMAGE_IMPL
@@ -4906,18 +5845,20 @@ NaClO_ErrorType NaClO_Reversed(NaClO_Image *data) {
         p.RGBA.r = 255 - p.RGBA.r;
         p.RGBA.g = 255 - p.RGBA.g;
         p.RGBA.b = 255 - p.RGBA.b;
-        // p.RGBA.a = 255 - p.RGBA.a;
         break;
       case NaClO_L:
-        p.L = 1 - p.L;
+        p.L = 1.0f - p.L;
+        break;
       case NaClO_1:
         p.value = not p.value;
+        break;
       }
+      *NaClO_Pixel(data, x, y) = p;
     }
   }
   return NACLO_OK;
 }
-NaClO_ImageResult NaClO_ReverseImage(const NaClO_Image *data) {
+NaClO_ImageResult NaClO_Reverse(const NaClO_Image *data) {
 
   NaClO_ImageResult T = NaClO_CopyImage(data);
   if (T.Error != NACLO_OK) {
@@ -6321,7 +7262,7 @@ NaClO_ErrorType NaClO_BlendedByMask(NaClO_Image *I1, const NaClO_Image *I2,
       NaClO_PixelType p1 = *NaClO_Pixel(I1, x, y);
       NaClO_PixelType p2 = *NaClO_Pixel(&I22.result, x, y);
       NaClO_PixelType p3 = *NaClO_Pixel(&Mask2.result, x, y);
-      NaClO_float ratio = p3.L;
+      NaClO_float ratio = 1 - p3.L;
       switch (I1->mode) {
       case NaClO_RGB:
         p1.RGB.r = (NaClO_float)p1.RGB.r * (1 - ratio) +
@@ -6359,7 +7300,8 @@ NaClO_ErrorType NaClO_BlendedByMask(NaClO_Image *I1, const NaClO_Image *I2,
   NaClO_FreeImage(&Mask2.result);
   return NACLO_OK;
 }
-NaClO_ImageResult NaClO_BlendByMask(NaClO_Image *I1, const NaClO_Image *I2,
+NaClO_ImageResult NaClO_BlendByMask(const NaClO_Image *I1,
+                                    const NaClO_Image *I2,
                                     const NaClO_Image *mask) {
   NaClO_ImageResult T = NaClO_CopyImage(I1);
   if (T.Error != NACLO_OK) {
@@ -6432,7 +7374,84 @@ NaClO_ImageResult NaClO_WhiteNoise(NaClO_uint width, NaClO_uint height,
   T.Error = NACLO_OK;
   return T;
 }
+NaClO_ImageResult NaClO_Noise(NaClO_uint width, NaClO_uint height, float ratio,
+                              bool rgb) {
+  NaClO_ImageResult T = NaClO_WhiteNoise(width, height, ratio, rgb);
+  NaClO_ImageResult T2 = NaClO_GaussianBlur(&T.result, 3);
+  NaClO_FreeImage(&T.result);
+  return T2;
+}
+NaClO_PixelType __naclo__m(NaClO_PixelType p, NaClO_ColorMode mode) {
+  NaClO_float rRatio;
+  NaClO_float gRatio;
+  NaClO_float bRatio;
+  NaClO_float aRatio;
+  NaClO_float lRatio;
+  const NaClO_float m = 0.5;
+  p.L += 0.2;
+  if (p.L > 1)
+    p.L = 1;
+  // switch (mode) {
 
+  // case NaClO_RGB:
+  //   rRatio = powf((NaClO_float)p.RGB.r / 255, m);
+  //   gRatio = powf((NaClO_float)p.RGB.g / 255, m);
+  //   bRatio = powf((NaClO_float)p.RGB.b / 255, m);
+  //   p.RGB.r = rRatio * 255;
+  //   p.RGB.g = gRatio * 255;
+  //   p.RGB.b = bRatio * 255;
+  //   break;
+  // case NaClO_RGBA:
+  //   rRatio = powf((NaClO_float)p.RGBA.r / 255, m);
+  //   gRatio = powf((NaClO_float)p.RGBA.g / 255, m);
+  //   bRatio = powf((NaClO_float)p.RGBA.b / 255, m);
+  //   aRatio = powf((NaClO_float)p.RGBA.a / 255, m);
+  //   p.RGBA.r = rRatio * 255;
+  //   p.RGBA.g = gRatio * 255;
+  //   p.RGBA.b = bRatio * 255;
+  //   p.RGBA.a = aRatio * 255;
+  // case NaClO_L:
+  //   lRatio = powf(p.L, m);
+  //   p.L = lRatio;
+  // case NaClO_1:
+  //   break;
+  // }
+  return p;
+}
+NaClO_ImageResult NaClO_Vignette(const NaClO_Image *data, NaClO_uint radius,
+                                 NaClO_uint strength) {
+  __NaClO__makeResult(T);
+  if (data == NULL) {
+    __NaClO__makeError(T, NACLO_NULL_POINTER);
+  }
+  if (data->width < radius or data->height < radius) {
+    radius = __naclo__min(data->width, data->height);
+  }
+  NaClO_ImageResult B = NaClO_NewBlankImage(data->width, data->height, NaClO_L);
+  if (B.Error != NACLO_OK) {
+    __NaClO__makeError(T, B.Error);
+  }
+  NaClO_PixelType white;
+  white.L = 1;
+  NaClO_DrawRectangleAA(&B.result, radius - 1, radius - 1, data->width - radius,
+                        data->height - radius, white, radius, true);
+  NaClO_ImageResult T2 = NaClO_GaussianBlur(&B.result, strength * 4);
+
+  NaClO_FreeImage(&B.result);
+  if (T2.Error != NACLO_OK) {
+    return T2;
+  }
+  B = NaClO_Reverse(&T2.result);
+  if (B.Error != NACLO_OK) {
+    NaClO_FreeImage(&T2.result);
+    return B;
+  }
+  T = NaClO_BlendByMask(data, &B.result, &T2.result);
+
+  NaClO_FreeImage(&T2.result);
+  NaClO_FreeImage(&B.result);
+  return T;
+}
 #ifdef __cplusplus
 }
 #endif
